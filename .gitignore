@@ -1,0 +1,13 @@
+# Checkpoints
+*.pth
+*.pt
+*.pytorch 
+
+# Data
+*.h5
+*.npy
+*.csv
+*.npz
+
+# Cache
+__pycache__/*
