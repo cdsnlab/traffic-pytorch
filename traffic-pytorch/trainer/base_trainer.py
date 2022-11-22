@@ -1,11 +1,62 @@
+import os
+import numpy as np
 from abc import abstractmethod
 from util.logging import * 
+import torch
+from data.utils import *
 import importlib
+
+class StandardScaler:
+    """
+    Standard the input
+    """
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def transform(self, data):
+        return (data - self.mean) / self.std
+
+    def inverse_transform(self, data):
+        return (data * self.std) + self.mean
+
 
 class BaseTrainer:
     '''
     Base class for all trainers
     '''
+
+    def load_dataset(self):
+        if os.path.exists("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
+            os.path.exists("{}/{}_test_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
+                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)):
+            print(toGreen('Found generated dataset in '+self.config.dataset_dir))
+        else:    
+            print(toGreen('Generating dataset...'))
+            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, self.config.use_dow, self.config.use_tod)
+
+        datasets = {}
+        for category in ['train', 'val', 'test']:
+            data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
+            if self.config.use_tod:
+                tod = np.load("{}{}_{}_tod_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
+                tod = seq2instance(tod, self.config.num_his, self.config.num_pred)
+            else:
+                tod = None
+            if self.config.use_dow:
+                dow = np.load("{}{}_{}_dow_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
+                dow = seq2instance(dow, self.config.num_his, self.config.num_pred)
+            else:
+                dow = None
+            x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
+            
+            if category == 'train':
+                self.mean, self.std = np.mean(x), np.std(x)
+                self.scaler = StandardScaler(self.mean, self.std)
+            x = (x - self.mean) / self.std 
+            datasets[category] = {'x': x, 'y': y, 'tod': tod, 'dow': dow}
+        
+        return datasets
 
     @abstractmethod 
     def compose_dataset(self, *inputs):
@@ -62,4 +113,9 @@ class BaseTrainer:
             raise 
 
         print_setup(self.config.loss, self.config.metrics, self.config.optimizer, self.config.scheduler)
-        
+    
+    def _eval_metrics(self, output, target):
+        acc_metrics = np.zeros(len(self.metrics))
+        for i, metric in enumerate(self.metrics):
+            acc_metrics[i] += metric(output, target)
+        return acc_metrics

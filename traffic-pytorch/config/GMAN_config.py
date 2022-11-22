@@ -8,6 +8,11 @@ class GMAN_config(BaseConfig):
         self.L = 1
         self.K = 8
         self.d = 8
-        self.SE = None # TODO
         self.num_his = 12
         self.bn_decay = 0.1
+        self.se_file = dataset_name + '-se.txt'
+        self.batch_size = 4 
+
+        # Both should be true!
+        self.use_tod = True 
+        self.use_dow = True 

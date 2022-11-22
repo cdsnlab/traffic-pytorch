@@ -81,6 +81,7 @@ class STEmbedding(nn.Module):
         SE = SE.unsqueeze(0).unsqueeze(0)
         SE = self.FC_se(SE)
         # temporal embedding
+        device = TE.device
         dayofweek = torch.empty(TE.shape[0], TE.shape[1], 7)
         timeofday = torch.empty(TE.shape[0], TE.shape[1], T)
         for i in range(TE.shape[0]):
@@ -88,7 +89,7 @@ class STEmbedding(nn.Module):
         for j in range(TE.shape[0]):
             timeofday[j] = F.one_hot(TE[..., 1][j].to(torch.int64) % 288, T)
         TE = torch.cat((dayofweek, timeofday), dim=-1)
-        TE = TE.unsqueeze(dim=2)
+        TE = TE.unsqueeze(dim=2).to(device)
         TE = self.FC_te(TE)
         del dayofweek, timeofday
         return SE + TE
@@ -305,7 +306,7 @@ class transformAttention(nn.Module):
         return X
 
 
-class GMAN(nn.Module):
+class GMANModel(nn.Module):
     '''
     GMAN
         X:       [batch_size, num_his, num_vertx]
@@ -320,14 +321,14 @@ class GMAN(nn.Module):
         return:  [batch_size, num_pred, num_vertex]
     '''
 
-    def __init__(self, config):
-        super(GMAN, self).__init__()
+    def __init__(self, config, SE):
+        super(GMANModel, self).__init__()
         L = config.L
         K = config.K
         d = config.d
         D = K * d
         self.num_his = config.num_his
-        self.SE = config.SE
+        self.SE = SE.to(config.device)
         self.STEmbedding = STEmbedding(D, config.bn_decay)
         self.STAttBlock_1 = nn.ModuleList([STAttBlock(K, d, config.bn_decay) for _ in range(L)])
         self.STAttBlock_2 = nn.ModuleList([STAttBlock(K, d, config.bn_decay) for _ in range(L)])
@@ -342,6 +343,7 @@ class GMAN(nn.Module):
         X = torch.unsqueeze(X, -1)
         X = self.FC_1(X)
         # STE
+
         STE = self.STEmbedding(self.SE, TE)
         STE_his = STE[:, :self.num_his]
         STE_pred = STE[:, self.num_his:]

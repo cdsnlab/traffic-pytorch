@@ -1,44 +1,31 @@
-import os
 import time
 import math
 import torch 
 import torch.nn as nn 
 import numpy as np 
-from data.utils import generate_train_val_test
-from data.datasets import DRCNNDataset, StandardScaler
+from data.utils import *
+from data.datasets import DCRNNDataset
 from torch.utils.data import DataLoader
 from trainer.base_trainer import BaseTrainer
 from util.logging import * 
 
 class DCRNNTrainer(BaseTrainer):
-    def __init__(self, model, config):
+    def __init__(self, cls, config):
         self.config = config
         self.device = self.config.device
-        self.setup_model(model)
+        self.cls = cls
 
-    def setup_model(self, model):
-        self.model = model(self.config).to(self.device)
+    def setup_model(self):
+        self.model = self.cls(self.config).to(self.device)
 
     def compose_dataset(self):
-        if os.path.exists("{}/{}_train_{}.npz".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio)) and \
-            os.path.exists("{}/{}_test_{}.npz".format(self.config.dataset_dir, self.config.dataset_name, self.config.test_ratio)):
-                print(toGreen('Found generated dataset in '+self.config.dataset_dir))
-        else:    
-            print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)
+        datasets = self.load_dataset()
+        for category in ['train', 'val', 'test']:
+            datasets[category] = DCRNNDataset(datasets[category])
 
-        datasets = {}
-        for category, ratio in zip(['train', 'val', 'test'], ['_{}'.format(self.config.train_ratio), '', '_{}'.format(self.config.test_ratio)]):
-            cat_data = np.load("{}/{}_{}{}.npz".format(self.config.dataset_dir, self.config.dataset_name, category, ratio))
-            datasets[category] = DRCNNDataset(cat_data['x'], cat_data['y'])
-
-        x_train = np.load("{}/{}_train_{}.npz".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio))['x']
-        self.scaler = StandardScaler(mean=x_train[..., 0].mean(), std=x_train[..., 0].std())
-        
         num_train_sample = len(datasets['train'])
         num_val_sample = len(datasets['val'])
 
-        # get number of iterations per epoch for progress bar
         self.num_train_iteration_per_epoch = math.ceil(num_train_sample / self.config.batch_size)
         self.num_val_iteration_per_epoch = math.ceil(num_val_sample / self.config.test_batch_size)
 

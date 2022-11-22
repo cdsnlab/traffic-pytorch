@@ -11,7 +11,7 @@ class DCRNN_config(BaseConfig):
         self.enc_input_dim = 2
         self.dec_input_dim = 1
         self.max_diffusion_step = 2
-        self.num_nodes = 207
+        self.num_nodes = 325
         self.num_rnn_layers = 2
         self.rnn_units = 64
         self.seq_len = 12
@@ -22,4 +22,3 @@ class DCRNN_config(BaseConfig):
         # Model-specific hyperparameters
         self.cl_decay_steps = 2000
         self.max_grad_norm = 5
-        self.null_value = 0.0
