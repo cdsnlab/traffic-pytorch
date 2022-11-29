@@ -319,7 +319,7 @@ class DCGRUDecoder(nn.Module):
         inputs = torch.reshape(inputs, (seq_length, batch_size, -1))  # (12+1, 50, 207*1)
 
         # tensor to store decoder outputs
-        outputs = torch.zeros(seq_length, batch_size, self._num_nodes*self._output_dim)  # (13, 50, 207*1)
+        outputs = torch.zeros(seq_length, batch_size, self._num_nodes*self._output_dim).to(inputs.device)  # (13, 50, 207*1)
         current_input = inputs[0]  # the first input to the rnn is GO Symbol
         for t in range(1, seq_length):
             # hidden_state = initial_hidden_state[i_layer]  # i_layer=0, 1, ...
@@ -356,7 +356,7 @@ class DCRNNModel(nn.Module):
         self._output_dim = config.output_dim  # should be 1
 
         # specify a GO symbol as the start of the decoder
-        self.GO_Symbol = torch.zeros(1, config.batch_size, config.num_nodes * self._output_dim, 1).cuda()
+        self.GO_Symbol = torch.zeros(1, config.batch_size, config.num_nodes * self._output_dim, 1).to(config.device)
 
         self.encoder = DCRNNEncoder(input_dim=config.enc_input_dim, adj_mat=self.adj_mat,
                                     max_diffusion_step=config.max_diffusion_step,
@@ -377,11 +377,11 @@ class DCRNNModel(nn.Module):
         target = torch.cat([self.GO_Symbol, target], dim=0)
 
         # initialize the hidden state of the encoder
-        init_hidden_state = self.encoder.init_hidden(self._batch_size).cuda()
+        init_hidden_state = self.encoder.init_hidden(self._batch_size).to(source.device)
 
         # last hidden state of the encoder is the context
         context, _ = self.encoder(source, init_hidden_state)  # (num_layers, batch, outdim)
-
         outputs = self.decoder(target, context, teacher_forcing_ratio=teacher_forcing_ratio)
+
         # the elements of the first time step of the outputs are all zeros.
         return outputs[1:, :, :]  # (seq_length, batch_size, num_nodes*output_dim)  (12, 64, 207*1)

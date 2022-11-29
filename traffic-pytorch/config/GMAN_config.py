@@ -11,7 +11,7 @@ class GMAN_config(BaseConfig):
         self.num_his = 12
         self.bn_decay = 0.1
         self.se_file = dataset_name + '-se.txt'
-        self.batch_size = 4 
+        self.batch_size = 16 
 
         # Both should be true!
         self.use_tod = True 

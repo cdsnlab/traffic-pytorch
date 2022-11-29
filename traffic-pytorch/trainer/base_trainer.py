@@ -88,17 +88,16 @@ class BaseTrainer:
         # loss, metrics, optimizer, scheduler
         try:
             loss_class = getattr(importlib.import_module('evaluation.metrics'), self.config.loss)
-            self.loss = loss_class(self.scaler, self.config.null_value)
-            self.metrics = [getattr(importlib.import_module('evaluation.metrics'), met) for met in self.config.metrics]        
+            self.loss = loss_class()
+            self.metrics = [getattr(importlib.import_module('evaluation.metrics'), met)() for met in self.config.metrics]        
         except:
             print(toRed('No such metric in evaluation/metrics.py'))
             raise 
 
         try:
             # TODO Allow different types of optimizer like I did in scheduler 
-            trainable_params = filter(lambda p: p.requires_grad, self.model.parameters())
             optim_class = getattr(importlib.import_module('torch.optim'), self.config.optimizer)
-            self.optimizer = optim_class(trainable_params, lr=1e-4)
+            self.optimizer = optim_class(self.model.parameters(), lr=1e-4)
         except:
             print(toRed('Error loading optimizer: {}'.format(self.config.optimizer)))
             raise 
@@ -115,7 +114,8 @@ class BaseTrainer:
         print_setup(self.config.loss, self.config.metrics, self.config.optimizer, self.config.scheduler)
     
     def _eval_metrics(self, output, target):
-        acc_metrics = np.zeros(len(self.metrics))
-        for i, metric in enumerate(self.metrics):
-            acc_metrics[i] += metric(output, target)
+        acc_metrics = []
+        for metric in self.metrics:
+            with torch.no_grad():
+                acc_metrics.append(metric(output, target))
         return acc_metrics
