@@ -98,7 +98,7 @@ class BaseTrainer:
             # TODO Allow different types of optimizer like I did in scheduler 
             trainable_params = filter(lambda p: p.requires_grad, self.model.parameters())
             optim_class = getattr(importlib.import_module('torch.optim'), self.config.optimizer)
-            self.optimizer = optim_class(trainable_params)
+            self.optimizer = optim_class(trainable_params, lr=1e-4)
         except:
             print(toRed('Error loading optimizer: {}'.format(self.config.optimizer)))
             raise 

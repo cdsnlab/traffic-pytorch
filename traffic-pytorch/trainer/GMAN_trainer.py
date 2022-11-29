@@ -60,6 +60,8 @@ class GMANTrainer(BaseTrainer):
             self.optimizer.zero_grad()
 
             output = self.model(data, te)
+            output *= self.std 
+            output += self.mean
 
             loss = self.loss(output, target)  # loss is self-defined, need cpu input
             loss.backward()
