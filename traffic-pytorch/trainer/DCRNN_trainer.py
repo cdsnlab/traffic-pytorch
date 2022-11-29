@@ -42,7 +42,6 @@ class DCRNNTrainer(BaseTrainer):
         self.model.train()
         start_time = time.time()
         total_loss = 0
-        total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, target) in enumerate(self.train_loader):
             label = target[..., :self.config.output_dim].to(self.device)  
@@ -56,8 +55,8 @@ class DCRNNTrainer(BaseTrainer):
 
             output = self.model(data, target, teacher_forcing_ratio)
 
-            output = output * torch.tensor(self.std).to(self.device)
-            output = output + torch.tensor(self.mean).to(self.device)
+            output = output * self.std 
+            output = output + self.mean
 
             output = torch.transpose(output.view(12, self.config.batch_size, self.config.num_nodes, 
                             self.config.output_dim), 0, 1)  # back to (50, 12, 207, 1)

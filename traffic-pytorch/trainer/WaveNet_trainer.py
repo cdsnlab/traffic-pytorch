@@ -41,40 +41,36 @@ class WaveNetTrainer(BaseTrainer):
         self.model.train()
         start_time = time.time()
         total_loss = 0
-        total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data = data.transpose(1, 3)
-            target = target.transpose(1, 3)
+            target = target.transpose(1, 3)[:, 0, :, :]
             
-            data = data.to(self.device)
+            data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
 
             output = self.model(data)
             output = output.transpose(1, 3)
 
-            output *= self.std 
-            output += self.mean
+            output = output * self.std 
+            output = output + self.mean
 
-            loss = self.loss(output.cpu(), target[:, 0, :, :])
+            loss = self.loss(output, target)
             loss.backward()
 
             self.optimizer.step()
             training_time = time.time() - start_time
+            start_time = time.time()
 
             total_loss += loss.item()
-            total_metrics += self._eval_metrics(output.detach().cpu().numpy(), target[:, 0, :, :].numpy())
+            
+            output = output.detach().cpu()
+            target = target.detach().cpu()
 
-            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, total_metrics)
+            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, self._eval_metrics(output, target))
 
             # TODO: logging           
 
     def validate_epoch(self, epoch):
         pass 
     
-    def _eval_metrics(self, output, target):
-        acc_metrics = np.zeros(len(self.metrics))
-        for i, metric in enumerate(self.metrics):
-            acc_metrics[i] += metric(output, target)
-            # break
-        return acc_metrics

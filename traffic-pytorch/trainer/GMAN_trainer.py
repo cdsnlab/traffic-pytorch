@@ -54,7 +54,6 @@ class GMANTrainer(BaseTrainer):
         self.model.train()
         start_time = time.time()
         total_loss = 0
-        total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, te, target) in enumerate(self.train_loader):
             data, te, target = data.to(self.device), te.to(self.device), target.to(self.device)
@@ -62,8 +61,8 @@ class GMANTrainer(BaseTrainer):
 
             output = self.model(data, te)
 
-            output *= self.std 
-            output += self.mean 
+            output = output * self.std 
+            output = output + self.mean
 
             loss = self.loss(output, target)
             loss.backward()
