@@ -37,6 +37,19 @@ class GMANDataset(Dataset):
     def __len__(self):
         return self.y.shape[0]
 
+class STGCNDataset(Dataset):
+    def __init__(self, data):
+        x = torch.tensor(data['x']).float().unsqueeze(1)
+        y = torch.tensor(data['y']).float()
+        self.x = x
+        self.y = y
+
+    def __getitem__(self, index):
+        return self.x[index].float(), self.y[index].float()
+    
+    def __len__(self):
+        return self.y.size(0)
+
 
 class WaveNetDataset(Dataset):
     def __init__(self, data):
