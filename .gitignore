@@ -14,4 +14,4 @@ __pycache__/
 *.pyc
 
 # Log
-runs/*
+traffic_pytorch/runs/*
