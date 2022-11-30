@@ -5,6 +5,9 @@ from util.logging import *
 import torch
 from data.utils import *
 import importlib
+import shutil
+import json
+from datetime import datetime
 
 class StandardScaler:
     """
@@ -93,6 +96,7 @@ class BaseTrainer:
             print_total('TRAIN', epoch, self.config.total_epoch, self.config.loss, avg_loss, self.config.metrics, avg_metrics)
             if epoch % self.config.valid_every_epoch == 0:
                 self.validate(epoch, is_test=False)
+                torch.save(self.model.state_dict(), '../results/saved_models/{}/{}.pth'.format(self.save_name, epoch))
         print(toGreen('\nTRAINING END'))
         self.validate(epoch, is_test=True)
     
@@ -131,3 +135,11 @@ class BaseTrainer:
             with torch.no_grad():
                 acc_metrics.append(metric(output, target))
         return acc_metrics
+
+    def setup_save(self, args):
+        self.save_name = '{}_{}'.format(args.model, datetime.now().strftime("%d_%H_%M_%S"))
+        save_dir = '../results/saved_models/{}/'.format(self.save_name)
+        os.mkdir(save_dir)
+        shutil.copy('config/{}.py'.format(args.config), save_dir + 'config.txt')
+        with open(save_dir + 'cmd_args.txt', 'w') as f:
+            json.dump(args.__dict__, f, indent=2)

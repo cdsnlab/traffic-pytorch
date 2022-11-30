@@ -128,7 +128,7 @@ class WaveNetModel(nn.Module):
                                   bias=True)
 
         self.end_conv_2 = nn.Conv2d(in_channels=config.end_channels,
-                                    out_channels=config.out_dim,
+                                    out_channels=config.num_pred,
                                     kernel_size=(1,1),
                                     bias=True)
 

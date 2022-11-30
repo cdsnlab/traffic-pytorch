@@ -39,6 +39,7 @@ def load_trainer(args):
         model_class = getattr(importlib.import_module("model.{}".format(args.model)), "{}Model".format(args.model))
         trainer_class = getattr(importlib.import_module("trainer.{}_trainer".format(args.model)), "{}Trainer".format(args.model))
         trainer = trainer_class(model_class, config)
+        trainer.setup_save(args)
     except:
         print(toRed('Model undefined'))
         raise 

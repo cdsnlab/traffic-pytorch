@@ -10,7 +10,6 @@ from trainer.base_trainer import BaseTrainer
 from util.logging import * 
 from logger.logger import Logger
 
-
 class DCRNNTrainer(BaseTrainer):
     def __init__(self, cls, config):
         self.config = config

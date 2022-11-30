@@ -14,7 +14,6 @@ class WaveNet_config(BaseConfig):
         self.addaptadj = True
         self.aptinit = None
         self.in_dim = 2
-        self.out_dim = 12
         self.residual_channels = 32
         self.dilation_channels = 32
         self.skip_channels = 256
