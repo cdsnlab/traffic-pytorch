@@ -12,3 +12,6 @@
 # Cache
 __pycache__/
 *.pyc
+
+# Log
+runs/*
