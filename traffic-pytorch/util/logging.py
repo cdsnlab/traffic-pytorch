@@ -52,3 +52,23 @@ def print_progress(phase, epoch, max_epoch, iter, max_iter, iter_time, loss_name
         sys.stdout.write('{} {:.2f} '.format(toWhite(name.replace('_np','')), val))
     
     sys.stdout.write('\n')
+
+def print_total(phase, epoch, max_epoch, loss_name, loss_val, metric_names, metric_vals):
+    CURSOR_UP_ONE = '\x1b[1A' 
+    ERASE_LINE = '\x1b[2K'
+
+    sys.stdout.write('{}[{}] {} [{}] {} {} [{}] '.format(
+        CURSOR_UP_ONE + ERASE_LINE,
+        toWhite(phase + " TOTAL"),
+        toWhite('{} '.format('EP')) + toCyan('{}/{}'.format(epoch, max_epoch)),
+        toWhite('AVG LOSS'),
+        toWhite(loss_name.replace('_loss', '')),
+        '{:.2f}'.format(loss_val),
+        toWhite('AVG METRIC')
+        )
+    )
+
+    for name, val in zip(metric_names, metric_vals):
+        sys.stdout.write('{} {:.2f} '.format(toWhite(name.replace('_np','')), val))
+    
+    sys.stdout.write('\n')

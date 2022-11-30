@@ -111,14 +111,15 @@ class STGCNTrainer(BaseTrainer):
             total_metrics += this_metrics
 
             print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
+        
+        avg_loss = total_loss / len(self.train_loader)
+        avg_metrics = total_metrics / len(self.train_loader)
+        self.logger.log_training(avg_loss, avg_metrics, epoch) 
+        print_total('TRAIN', epoch, self.config.total_epoch, self.config.loss, avg_loss, self.config.metrics, avg_metrics)
 
         # TODO: logging   
         if epoch % self.config.valid_every_epoch == 0:
-            avg_loss = total_loss / len(self.train_loader)
-            avg_metrics = total_metrics / len(self.train_loader)
-            self.logger.log_training(avg_loss, avg_metrics, epoch) 
             self.validate_epoch(epoch)
-
 
     def validate_epoch(self, epoch):
         self.model.eval()
@@ -152,6 +153,7 @@ class STGCNTrainer(BaseTrainer):
         avg_loss = total_loss / len(self.val_loader)
         avg_metrics = total_metrics / len(self.val_loader)
         self.logger.log_validation(avg_loss, avg_metrics, epoch)
+        print_total('VALID', epoch, self.config.total_epoch, self.config.loss, avg_loss, self.config.metrics, avg_metrics)
 
     @staticmethod
     def _compute_sampling_threshold(global_step, k):
