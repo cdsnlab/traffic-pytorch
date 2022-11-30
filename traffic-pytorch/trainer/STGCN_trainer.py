@@ -8,7 +8,7 @@ from data.datasets import STGCNDataset
 from torch.utils.data import DataLoader
 from trainer.base_trainer import BaseTrainer, StandardScaler
 from util.logging import * 
-from trainer.logger import Logger
+from logger.logger import Logger
 
 class STGCNTrainer(BaseTrainer):
     def __init__(self, cls, config):
