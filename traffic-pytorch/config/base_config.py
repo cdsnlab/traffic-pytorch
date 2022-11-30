@@ -6,7 +6,7 @@ class BaseConfig:
         # Data
         self.test_batch_size = 1
         self.num_his = 12 
-        self.num_pred = 12
+        self.num_pred = 3
         self.dataset_dir = dataset_dir 
         self.dataset_name = dataset_name
         self.train_ratio = train_ratio 
@@ -14,7 +14,7 @@ class BaseConfig:
 
         # Temporal features
         self.use_tod = True 
-        self.use_dow = False 
+        self.use_dow = True 
 
         # Train 
         self.optimizer = 'Adam'

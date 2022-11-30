@@ -58,7 +58,7 @@ class DCRNNTrainer(BaseTrainer):
             output = output * self.std 
             output = output + self.mean
 
-            output = torch.transpose(output.view(12, self.config.batch_size, self.config.num_nodes, 
+            output = torch.transpose(output.view(self.config.num_pred, self.config.batch_size, self.config.num_nodes, 
                             self.config.output_dim), 0, 1)  # back to (50, 12, 207, 1)
 
             loss = self.loss(output, label) 

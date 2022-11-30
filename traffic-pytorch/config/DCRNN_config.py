@@ -22,3 +22,6 @@ class DCRNN_config(BaseConfig):
         # Model-specific hyperparameters
         self.cl_decay_steps = 2000
         self.max_grad_norm = 5
+
+        self.use_tod = True 
+        self.use_dow = False 
