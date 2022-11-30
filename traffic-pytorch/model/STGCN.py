@@ -102,7 +102,7 @@ class STGCNModel(nn.Module):
         super(STGCNModel, self).__init__()
         self.st_conv1 = st_conv_block(config.Ks, config.Kt, config.num_nodes, blocks[0], config.droprate, Lk)
         self.st_conv2 = st_conv_block(config.Ks, config.Kt, config.num_nodes, blocks[1], config.droprate, Lk)
-        self.output = output_layer(blocks[1][2], config.n_his - 4 * (config.Kt - 1), config.num_nodes)
+        self.output = output_layer(blocks[1][2], config.num_his - 4 * (config.Kt - 1), config.num_nodes)
 
     def forward(self, x):
         x_st1 = self.st_conv1(x)
