@@ -99,6 +99,7 @@ class BaseTrainer:
                 torch.save(self.model.state_dict(), '../results/saved_models/{}/{}.pth'.format(self.save_name, epoch))
         print(toGreen('\nTRAINING END'))
         self.validate(epoch, is_test=True)
+        self.logger.close()
     
     def setup_train(self):
         # loss, metrics, optimizer, scheduler

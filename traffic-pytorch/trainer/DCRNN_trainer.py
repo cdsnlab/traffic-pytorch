@@ -11,11 +11,12 @@ from util.logging import *
 from logger.logger import Logger
 
 class DCRNNTrainer(BaseTrainer):
-    def __init__(self, cls, config):
+    def __init__(self, cls, config, args):
         self.config = config
         self.device = self.config.device
         self.cls = cls
-        self.logger = Logger()
+        self.setup_save(args)
+        self.logger = Logger(self.save_name)
 
     def setup_model(self):
         self.model = self.cls(self.config).to(self.device)
