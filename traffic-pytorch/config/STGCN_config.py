@@ -22,7 +22,6 @@ class STGCN_config(BaseConfig):
         self.gso_type = 'rw_renorm_adj' # choices=['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj']
         self.enable_bias = True
         self.droprate = 0.0
-        
 
         self.dataset_name = dataset_name
         self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
