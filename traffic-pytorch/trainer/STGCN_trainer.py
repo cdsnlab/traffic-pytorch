@@ -97,7 +97,7 @@ class STGCNTrainer(BaseTrainer):
             start_time = time.time()
 
             total_loss += loss.item()
-            this_metrics = self._eval_metrics(output.detach().numpy(), label.numpy())
+            this_metrics = self._eval_metrics(output, label)
             total_metrics += this_metrics
 
             print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
@@ -125,7 +125,7 @@ class STGCNTrainer(BaseTrainer):
             start_time = time.time()
 
             total_loss += loss.item()
-            this_metrics = self._eval_metrics(output.detach().numpy(), label.numpy())
+            this_metrics = self._eval_metrics(output, label)
             total_metrics += this_metrics
 
             print_progress('TEST' if is_test else 'VALID', epoch, self.config.total_epoch, batch_idx, \

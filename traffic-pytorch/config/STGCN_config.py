@@ -14,6 +14,7 @@ class STGCN_config(BaseConfig):
         self.num_nodes = 228
         self.blocks = [[1, 32, 64], [64, 32, 128]]
         self.act_func = 'glu' # choises ['glu', 'gtu']
+        self.n_his = 12
         self.output_dim = 1
        
         # TODO
