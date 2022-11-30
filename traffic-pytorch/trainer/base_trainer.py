@@ -70,8 +70,15 @@ class BaseTrainer:
     def train_epoch(self, *inputs):
         raise NotImplementedError
 
+    def validate(self, epoch, is_test=False):
+        total_loss, total_metrics = self.validate_epoch(epoch, is_test)
+        avg_loss = total_loss / len(self.test_loader if is_test else self.val_loader)
+        avg_metrics = total_metrics / len(self.test_loader if is_test else self.val_loader)
+        self.logger.log_validation(avg_loss, avg_metrics, epoch)
+        print_total('TEST' if is_test else 'VALID', epoch, self.config.total_epoch, self.config.loss, avg_loss, self.config.metrics, avg_metrics)
+
     @abstractmethod 
-    def validate_epoch(self, *inputs):
+    def validate_epoch(self, epoch, is_test):
         raise NotImplementedError
     
     def train(self):
@@ -79,10 +86,15 @@ class BaseTrainer:
         self.setup_train()
         print(toGreen('\nTRAINING START'))
         for epoch in range(self.config.total_epoch):
-            self.train_epoch(epoch)
-            if epoch % self.config.valid_every_epoch == self.config.valid_every_epoch-1: 
-                self.validate_epoch(epoch)
+            total_loss, total_metrics = self.train_epoch(epoch)
+            avg_loss = total_loss / len(self.train_loader)
+            avg_metrics = total_metrics / len(self.train_loader)
+            self.logger.log_training(avg_loss, avg_metrics, epoch) 
+            print_total('TRAIN', epoch, self.config.total_epoch, self.config.loss, avg_loss, self.config.metrics, avg_metrics)
+            if epoch % self.config.valid_every_epoch == 0:
+                self.validate(epoch, is_test=False)
         print(toGreen('\nTRAINING END'))
+        self.validate(epoch, is_test=True)
     
     def setup_train(self):
         # loss, metrics, optimizer, scheduler

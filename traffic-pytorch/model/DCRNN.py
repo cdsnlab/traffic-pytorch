@@ -344,7 +344,6 @@ class DCRNNModel(nn.Module):
         super(DCRNNModel, self).__init__()
         # scaler for data normalization
         # self._scaler = scaler
-        self._batch_size = config.batch_size
         _, _, self.adj_mat = load_graph_data(config.adj_mat_path)
 
         # max_grad_norm parameter is actually defined in data_kwargs
@@ -354,9 +353,6 @@ class DCRNNModel(nn.Module):
         self._seq_len = config.seq_len  # should be 12
         # use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False))  # should be true
         self._output_dim = config.output_dim  # should be 1
-
-        # specify a GO symbol as the start of the decoder
-        self.GO_Symbol = torch.zeros(1, config.batch_size, config.num_nodes * self._output_dim, 1).to(config.device)
 
         self.encoder = DCRNNEncoder(input_dim=config.enc_input_dim, adj_mat=self.adj_mat,
                                     max_diffusion_step=config.max_diffusion_step,
@@ -370,14 +366,9 @@ class DCRNNModel(nn.Module):
         assert self.encoder.hid_dim == self.decoder.hid_dim, \
             "Hidden dimensions of encoder and decoder must be equal!"
 
-    def forward(self, source, target, teacher_forcing_ratio):
-        # the size of source/target would be (64, 12, 207, 2)
-        source = torch.transpose(source, dim0=0, dim1=1)
-        target = torch.transpose(target[..., :self._output_dim], dim0=0, dim1=1)
-        target = torch.cat([self.GO_Symbol, target], dim=0)
-
+    def forward(self, source, target, teacher_forcing_ratio):        
         # initialize the hidden state of the encoder
-        init_hidden_state = self.encoder.init_hidden(self._batch_size).to(source.device)
+        init_hidden_state = self.encoder.init_hidden(source.size(1)).to(source.device)
 
         # last hidden state of the encoder is the context
         context, _ = self.encoder(source, init_hidden_state)  # (num_layers, batch, outdim)

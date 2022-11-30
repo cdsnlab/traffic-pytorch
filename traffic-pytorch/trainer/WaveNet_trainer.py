@@ -24,13 +24,9 @@ class WaveNetTrainer(BaseTrainer):
         datasets = self.load_dataset()
         for category in ['train', 'val', 'test']:
             datasets[category] = WaveNetDataset(datasets[category])
-
-        num_train_sample = len(datasets['train'])
-        num_val_sample = len(datasets['val'])
-
-        self.num_train_iteration_per_epoch = math.ceil(num_train_sample / self.config.batch_size)
-        self.num_val_iteration_per_epoch = math.ceil(num_val_sample / self.config.test_batch_size)
-
+        self.num_train_iteration_per_epoch = math.ceil(len(datasets['train']) / self.config.batch_size)
+        self.num_val_iteration_per_epoch = math.ceil(len(datasets['val']) / self.config.test_batch_size)
+        self.num_test_iteration_per_epoch = math.ceil(len(datasets['test']) / self.config.test_batch_size)
         return datasets['train'], datasets['val'], datasets['test']
 
     def compose_loader(self):
@@ -76,12 +72,44 @@ class WaveNetTrainer(BaseTrainer):
 
             print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
         
-        if epoch % self.config.valid_every_epoch == 0:
-            avg_loss = total_loss / len(self.train_loader)
-            avg_metrics = total_metrics / len(self.train_loader)
-            self.logger.log_training(avg_loss, avg_metrics, epoch) 
-            self.validate_epoch(epoch)
+        return total_loss, total_metrics
 
-    def validate_epoch(self, epoch):
-        pass 
+
+    def validate_epoch(self, epoch, is_test):
+        self.model.eval()
+        start_time = time.time()
+        total_loss = 0
+        total_metrics = np.zeros(len(self.metrics))
+
+        for batch_idx, (data, target) in enumerate(self.test_loader if is_test else self.val_loader):
+            data = data.transpose(1, 3)
+            target = target.transpose(1, 3)[:, 0, :, :]
+            
+            data, target = data.to(self.device), target.to(self.device)
+
+            with torch.no_grad():
+                output = self.model(data)
+            output = output.transpose(1, 3)
+
+            output = output * self.std 
+            output = output + self.mean
+
+            loss = self.loss(output, target)
+            
+            valid_time = time.time() - start_time
+            start_time = time.time()
+
+            total_loss += loss.item()
+            
+            output = output.detach().cpu()
+            target = target.detach().cpu()
+
+            this_metrics = self._eval_metrics(output, target)
+            total_metrics += this_metrics
+
+            print_progress('TEST' if is_test else 'VALID', epoch, self.config.total_epoch, batch_idx, \
+                self.num_test_iteration_per_epoch if is_test else self.num_val_iteration_per_epoch, valid_time, \
+                self.config.loss, loss.item(), self.config.metrics, this_metrics)
+                
+        return total_loss, total_metrics
     

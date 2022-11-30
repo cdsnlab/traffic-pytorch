@@ -22,3 +22,6 @@ class WaveNet_config(BaseConfig):
         self.kernel_size = 2
         self.blocks = 4
         self.layers = 2
+
+        self.use_tod = True 
+        self.use_dow = False 
