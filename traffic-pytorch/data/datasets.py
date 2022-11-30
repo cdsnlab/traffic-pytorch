@@ -41,6 +41,28 @@ class STGCNDataset(Dataset):
     def __init__(self, data):
         x = torch.tensor(data['x']).float().unsqueeze(1)
         y = torch.tensor(data['y']).float()
+        self.x = x
+        self.y = y
+
+    def __getitem__(self, index):
+        return self.x[index].float(), self.y[index].float()
+    
+    def __len__(self):
+        return self.y.size(0)
+
+
+class WaveNetDataset(Dataset):
+    def __init__(self, data):
+        x = torch.tensor(data['x']).float().unsqueeze(-1)
+        y = torch.tensor(data['y']).float().unsqueeze(-1)
+
+        if data['tod'] is not None: 
+            x = torch.cat([x, torch.tensor(data['tod'][0]).unsqueeze(-2).repeat(1, 1, x.size(-2), 1)], dim=-1)
+            y = torch.cat([y, torch.tensor(data['tod'][1]).unsqueeze(-2).repeat(1, 1, x.size(-2), 1)], dim=-1)
+
+        if data['dow'] is not None: 
+            x = torch.cat([x, torch.tensor(data['dow'][0]).unsqueeze(-2).repeat(1, 1, x.size(-2), 1)], dim=-1)
+            y = torch.cat([y, torch.tensor(data['dow'][1]).unsqueeze(-2).repeat(1, 1, x.size(-2), 1)], dim=-1)
         
         self.x = x
         self.y = y

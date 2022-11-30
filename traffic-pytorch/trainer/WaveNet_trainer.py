@@ -2,42 +2,29 @@ import time
 import math
 import torch 
 import numpy as np 
-import os
-from data.datasets import GMANDataset
+from data.utils import *
+from data.datasets import WaveNetDataset
 from torch.utils.data import DataLoader
 from trainer.base_trainer import BaseTrainer
 from util.logging import * 
 
-class GMANTrainer(BaseTrainer):
+class WaveNetTrainer(BaseTrainer):
     def __init__(self, cls, config):
         self.config = config
         self.device = self.config.device
         self.cls = cls
 
     def setup_model(self):
-        self.model = self.cls(self.config, self.SE).to(self.device)
+        self.model = self.cls(self.config).to(self.device)
 
     def compose_dataset(self):
         datasets = self.load_dataset()
-
-        with open(os.path.join(self.config.dataset_dir, self.config.se_file), mode='r') as f:
-            lines = f.readlines()
-            temp = lines[0].split(' ')
-            num_vertex, dims = int(temp[0]), int(temp[1])
-            SE = torch.zeros((num_vertex, dims), dtype=torch.float32)
-            for line in lines[1:]:
-                temp = line.split(' ')
-                index = int(temp[0])
-                SE[index] = torch.tensor([float(ch) for ch in temp[1:]])
-            self.SE = SE 
-
         for category in ['train', 'val', 'test']:
-            datasets[category] = GMANDataset(datasets[category])
+            datasets[category] = WaveNetDataset(datasets[category])
 
         num_train_sample = len(datasets['train'])
         num_val_sample = len(datasets['val'])
 
-        # get number of iterations per epoch for progress bar
         self.num_train_iteration_per_epoch = math.ceil(num_train_sample / self.config.batch_size)
         self.num_val_iteration_per_epoch = math.ceil(num_val_sample / self.config.test_batch_size)
 
@@ -55,26 +42,30 @@ class GMANTrainer(BaseTrainer):
         start_time = time.time()
         total_loss = 0
 
-        for batch_idx, (data, te, target) in enumerate(self.train_loader):
-            data, te, target = data.to(self.device), te.to(self.device), target.to(self.device)
+        for batch_idx, (data, target) in enumerate(self.train_loader):
+            data = data.transpose(1, 3)
+            target = target.transpose(1, 3)[:, 0, :, :]
+            
+            data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
 
-            output = self.model(data, te)
+            output = self.model(data)
+            output = output.transpose(1, 3)
 
             output = output * self.std 
             output = output + self.mean
 
             loss = self.loss(output, target)
             loss.backward()
-            
+
             self.optimizer.step()
             training_time = time.time() - start_time
             start_time = time.time()
 
+            total_loss += loss.item()
+            
             output = output.detach().cpu()
             target = target.detach().cpu()
-
-            total_loss += loss.item()
 
             print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, self._eval_metrics(output, target))
 
@@ -82,3 +73,4 @@ class GMANTrainer(BaseTrainer):
 
     def validate_epoch(self, epoch):
         pass 
+    

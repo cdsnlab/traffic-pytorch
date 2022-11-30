@@ -18,9 +18,8 @@ class BaseConfig:
 
         # Train 
         self.optimizer = 'Adam'
-        self.loss = 'masked_mae_loss'
-        # self.metrics = ["masked_mae_np", "masked_mape_np", "masked_rmse_np"]
-        self.metrics = ['masked_mape_np']
+        self.loss = 'MaskedMSE'
+        self.metrics = ['MaskedMAE']
         self.scheduler = 'MultiStepLR'
         self.scheduler_args = {
 			"milestones": [20, 30, 40, 50],

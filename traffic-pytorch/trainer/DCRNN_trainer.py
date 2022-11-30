@@ -42,11 +42,11 @@ class DCRNNTrainer(BaseTrainer):
         self.model.train()
         start_time = time.time()
         total_loss = 0
-        total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, target) in enumerate(self.train_loader):
-            label = target[..., :self.config.output_dim]  # (..., 1)  supposed to be numpy array
+            label = target[..., :self.config.output_dim].to(self.device)  
             data, target = data.to(self.device), target.to(self.device)
+
             self.optimizer.zero_grad()
 
             # compute sampling ratio, which gradually decay to 0 during training
@@ -54,20 +54,27 @@ class DCRNNTrainer(BaseTrainer):
             teacher_forcing_ratio = self._compute_sampling_threshold(global_step, self.config.cl_decay_steps)
 
             output = self.model(data, target, teacher_forcing_ratio)
+
+            output = output * self.std 
+            output = output + self.mean
+
             output = torch.transpose(output.view(12, self.config.batch_size, self.config.num_nodes, 
                             self.config.output_dim), 0, 1)  # back to (50, 12, 207, 1)
 
-            loss = self.loss(output.cpu(), label)  # loss is self-defined, need cpu input
+            loss = self.loss(output, label) 
             loss.backward()
 
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
             self.optimizer.step()
             training_time = time.time() - start_time
+            start_time = time.time()
 
             total_loss += loss.item()
-            total_metrics += self._eval_metrics(output.detach().numpy(), label.numpy())
 
-            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, total_metrics)
+            output = output.detach().cpu()
+            label = label.detach().cpu()
+
+            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, self._eval_metrics(output, label))
 
             # TODO: logging           
 
@@ -83,10 +90,3 @@ class DCRNNTrainer(BaseTrainer):
         :return:
         """
         return k / (k + math.exp(global_step / k))
-    
-    def _eval_metrics(self, output, target):
-        acc_metrics = np.zeros(len(self.metrics))
-        for i, metric in enumerate(self.metrics):
-            acc_metrics[i] += metric(output, target)
-            # break
-        return acc_metrics
