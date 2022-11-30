@@ -31,13 +31,13 @@ def print_setup(loss, metric, optimzier, scheduler):
         )
     )
     
-def print_train(epoch, max_epoch, iter, max_iter, iter_time, loss_name, loss_val, metric_names, metric_vals):
+def print_progress(phase, epoch, max_epoch, iter, max_iter, iter_time, loss_name, loss_val, metric_names, metric_vals):
     CURSOR_UP_ONE = '\x1b[1A' 
     ERASE_LINE = '\x1b[2K'
 
     sys.stdout.write('{}[{}] {} {} {} [{}] {} {} [{}] '.format(
         CURSOR_UP_ONE + ERASE_LINE,
-        toWhite('TRAIN'),
+        toWhite(phase),
         toWhite('{} '.format('EP')) + toCyan('{}/{}'.format(epoch, max_epoch)),
         toWhite('{} '.format('ITER')) + toCyan('{}/{}'.format(iter, max_iter)),
         toWhite('ETA') + toGreen(' {:5.2f}s'.format(iter_time * (max_iter-iter))),

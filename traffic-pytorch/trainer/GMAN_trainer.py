@@ -7,12 +7,15 @@ from data.datasets import GMANDataset
 from torch.utils.data import DataLoader
 from trainer.base_trainer import BaseTrainer
 from util.logging import * 
+from logger.logger import Logger
+
 
 class GMANTrainer(BaseTrainer):
     def __init__(self, cls, config):
         self.config = config
         self.device = self.config.device
         self.cls = cls
+        self.logger = Logger()
 
     def setup_model(self):
         self.model = self.cls(self.config, self.SE).to(self.device)
@@ -54,6 +57,7 @@ class GMANTrainer(BaseTrainer):
         self.model.train()
         start_time = time.time()
         total_loss = 0
+        total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, te, target) in enumerate(self.train_loader):
             data, te, target = data.to(self.device), te.to(self.device), target.to(self.device)
@@ -71,14 +75,21 @@ class GMANTrainer(BaseTrainer):
             training_time = time.time() - start_time
             start_time = time.time()
 
+            total_loss += loss.item()
+
             output = output.detach().cpu()
             target = target.detach().cpu()
 
-            total_loss += loss.item()
+            this_metrics = self._eval_metrics(output, target)
+            total_metrics += this_metrics
 
-            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, self._eval_metrics(output, target))
-
-            # TODO: logging           
+            print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
+        
+        if epoch % self.config.valid_every_epoch == 0:
+            avg_loss = total_loss / len(self.train_loader)
+            avg_metrics = total_metrics / len(self.train_loader)
+            self.logger.log_training(avg_loss, avg_metrics, epoch) 
+            self.validate_epoch(epoch)
 
     def validate_epoch(self, epoch):
         pass 

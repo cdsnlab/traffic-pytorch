@@ -104,11 +104,13 @@ class STGCNTrainer(BaseTrainer):
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
             self.optimizer.step()
             training_time = time.time() - start_time
+            start_time = time.time()
 
             total_loss += loss.item()
-            total_metrics += self._eval_metrics(output.detach().numpy(), label.numpy())
+            this_metrics = self._eval_metrics(output.detach().numpy(), label.numpy())
+            total_metrics += this_metrics
 
-            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, total_metrics)
+            print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
 
         # TODO: logging   
         if epoch % self.config.valid_every_epoch == 0:
@@ -122,6 +124,7 @@ class STGCNTrainer(BaseTrainer):
         self.model.eval()
         total_loss = 0
         total_metrics = np.zeros(len(self.metrics))
+        start_time = time.time()
 
         for batch_idx, (data, target) in enumerate(self.val_loader):
             label = target[..., :self.config.output_dim]
@@ -130,18 +133,25 @@ class STGCNTrainer(BaseTrainer):
 
             # compute sampling ratio, which gradually decay to 0 during training
             global_step = (epoch - 1) * self.num_train_iteration_per_epoch + batch_idx
+            
+            with torch.no_grad():
+                output = self.model(data)
 
-            output = self.model(data)
             output = output.cpu()
             loss = self.loss(output, label)  # loss is self-defined, need cpu input
+
+            valid_time = time.time() - start_time
+            start_time = time.time()
+
             total_loss += loss.item()
-            total_metrics += self._eval_metrics(output.detach().numpy(), label.numpy())
+            this_metrics = self._eval_metrics(output.detach().numpy(), label.numpy())
+            total_metrics += this_metrics
+
+            print_progress('VALID', epoch, self.config.total_epoch, batch_idx, self.num_val_iteration_per_epoch, valid_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
 
         avg_loss = total_loss / len(self.val_loader)
         avg_metrics = total_metrics / len(self.val_loader)
         self.logger.log_validation(avg_loss, avg_metrics, epoch)
-        #print_val(epoch, self.config.total_epoch, avg_loss, self.config.metrics, avg_metrics)
-
 
     @staticmethod
     def _compute_sampling_threshold(global_step, k):

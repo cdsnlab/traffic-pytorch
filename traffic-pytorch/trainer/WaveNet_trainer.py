@@ -7,12 +7,15 @@ from data.datasets import WaveNetDataset
 from torch.utils.data import DataLoader
 from trainer.base_trainer import BaseTrainer
 from util.logging import * 
+from logger.logger import Logger
+
 
 class WaveNetTrainer(BaseTrainer):
     def __init__(self, cls, config):
         self.config = config
         self.device = self.config.device
         self.cls = cls
+        self.logger = Logger()
 
     def setup_model(self):
         self.model = self.cls(self.config).to(self.device)
@@ -41,6 +44,7 @@ class WaveNetTrainer(BaseTrainer):
         self.model.train()
         start_time = time.time()
         total_loss = 0
+        total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data = data.transpose(1, 3)
@@ -67,9 +71,16 @@ class WaveNetTrainer(BaseTrainer):
             output = output.detach().cpu()
             target = target.detach().cpu()
 
-            print_train(epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, self._eval_metrics(output, target))
+            this_metrics = self._eval_metrics(output, target)
+            total_metrics += this_metrics
 
-            # TODO: logging           
+            print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
+        
+        if epoch % self.config.valid_every_epoch == 0:
+            avg_loss = total_loss / len(self.train_loader)
+            avg_metrics = total_metrics / len(self.train_loader)
+            self.logger.log_training(avg_loss, avg_metrics, epoch) 
+            self.validate_epoch(epoch)
 
     def validate_epoch(self, epoch):
         pass 
