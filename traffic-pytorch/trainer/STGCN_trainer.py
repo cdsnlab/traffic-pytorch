@@ -40,20 +40,6 @@ class STGCNTrainer(BaseTrainer):
         return datasets
     
     def setup_model(self):
-        Ko = self.config.n_his - (self.config.Kt - 1) * 2 * self.config.stblock_num
-        # blocks: settings of channel size in st_conv_blocks and output layer,
-        # using the bottleneck design in st_conv_blocks
-        '''
-        blocks = []
-        blocks.append([1])
-        for l in range(self.config.stblock_num):
-            blocks.append([64, 16, 64])
-        if Ko == 0:
-            blocks.append([128])
-        elif Ko > 0:
-            blocks.append([128, 128])
-        blocks.append([1])
-        '''
         blocks = self.config.blocks
         Lk = get_matrix(self.config.adj_mat_path, self.config.Ks).to(self.device)
         self.model = self.cls(self.config, blocks, Lk).to(self.device)

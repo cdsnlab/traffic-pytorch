@@ -100,11 +100,12 @@ class output_layer(nn.Module):
 class STGCNModel(nn.Module):
     def __init__(self, config, blocks, Lk):
         super(STGCNModel, self).__init__()
-        self.st_conv1 = st_conv_block(config.Ks, config.Kt, config.num_nodes, blocks[0], config.droprate, Lk)
-        self.st_conv2 = st_conv_block(config.Ks, config.Kt, config.num_nodes, blocks[1], config.droprate, Lk)
-        self.output = output_layer(blocks[1][2], config.num_his - 4 * (config.Kt - 1), config.num_nodes)
+        for i, block in enumerate(blocks):
+            self.add_module("st_conv_block_" + str(i), st_conv_block(config.Ks, config.Kt, config.num_nodes, block, config.droprate, Lk=Lk))
+        self.output = output_layer(blocks[-1][-1], config.num_his - 4 * (config.Kt - 1), config.num_nodes)
 
     def forward(self, x):
-        x_st1 = self.st_conv1(x)
-        x_st2 = self.st_conv2(x_st1)
-        return self.output(x_st2)
+        for i in range(len(self._modules) - 1):
+            x = self._modules["st_conv_block_" + str(i)](x)
+        x = self.output(x)
+        return x
