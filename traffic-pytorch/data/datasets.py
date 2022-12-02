@@ -24,6 +24,16 @@ class DCRNNDataset(Dataset):
     def __len__(self):
         return self.y.size(0)
 
+class STDENDataset(Dataset):
+    def __init__(self, data):
+        self.x = data['x'] 
+        self.y = data['y']
+
+    def __getitem__(self, index):
+        return torch.tensor(self.x[index]).float(), torch.tensor(self.y[index]).float()
+    
+    def __len__(self):
+        return self.y.shape[0]
 
 class GMANDataset(Dataset):
     def __init__(self, data):
