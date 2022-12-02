@@ -11,7 +11,6 @@ class DCRNN_config(BaseConfig):
         self.enc_input_dim = 2
         self.dec_input_dim = 1
         self.max_diffusion_step = 2
-        self.num_nodes = 325
         self.num_rnn_layers = 2
         self.rnn_units = 64
         self.seq_len = 12

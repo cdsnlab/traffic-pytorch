@@ -36,7 +36,7 @@ class BaseTrainer:
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, self.config.use_dow, self.config.use_tod)
+            num_nodes = generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, self.config.use_dow, self.config.use_tod)
 
         datasets = {}
         for category in ['train', 'val', 'test']:
@@ -59,7 +59,7 @@ class BaseTrainer:
             x = (x - self.mean) / self.std 
             datasets[category] = {'x': x, 'y': y, 'tod': tod, 'dow': dow}
         
-        return datasets
+        return datasets, num_nodes
 
     @abstractmethod 
     def compose_dataset(self, *inputs):
