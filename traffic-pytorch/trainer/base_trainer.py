@@ -124,7 +124,7 @@ class BaseTrainer:
     def setup_save(self, args):
         self.save_name = '{}_{}'.format(args.model, datetime.now().strftime("%d_%H_%M_%S"))
         save_dir = '../results/saved_models/{}/'.format(self.save_name)
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
         shutil.copy('config/{}.py'.format(args.config), save_dir + 'config.txt')
         with open(save_dir + 'cmd_args.txt', 'w') as f:
             json.dump(args.__dict__, f, indent=2)

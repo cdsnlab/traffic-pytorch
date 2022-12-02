@@ -40,20 +40,6 @@ class STGCNTrainer(BaseTrainer):
         return datasets
     
     def setup_model(self):
-        Ko = self.config.n_his - (self.config.Kt - 1) * 2 * self.config.stblock_num
-        # blocks: settings of channel size in st_conv_blocks and output layer,
-        # using the bottleneck design in st_conv_blocks
-        '''
-        blocks = []
-        blocks.append([1])
-        for l in range(self.config.stblock_num):
-            blocks.append([64, 16, 64])
-        if Ko == 0:
-            blocks.append([128])
-        elif Ko > 0:
-            blocks.append([128, 128])
-        blocks.append([1])
-        '''
         blocks = self.config.blocks
         Lk = get_matrix(self.config.adj_mat_path, self.config.Ks).to(self.device)
         self.model = self.cls(self.config, blocks, Lk).to(self.device)
@@ -97,7 +83,7 @@ class STGCNTrainer(BaseTrainer):
             start_time = time.time()
 
             total_loss += loss.item()
-            this_metrics = self._eval_metrics(output.detach().numpy(), label.numpy())
+            this_metrics = self._eval_metrics(output, label)
             total_metrics += this_metrics
 
             print_progress('TRAIN', epoch, self.config.total_epoch, batch_idx, self.num_train_iteration_per_epoch, training_time, self.config.loss, loss.item(), self.config.metrics, this_metrics)
@@ -125,7 +111,7 @@ class STGCNTrainer(BaseTrainer):
             start_time = time.time()
 
             total_loss += loss.item()
-            this_metrics = self._eval_metrics(output.detach().numpy(), label.numpy())
+            this_metrics = self._eval_metrics(output, label)
             total_metrics += this_metrics
 
             print_progress('TEST' if is_test else 'VALID', epoch, self.config.total_epoch, batch_idx, \
