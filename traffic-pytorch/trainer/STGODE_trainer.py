@@ -10,7 +10,7 @@ from trainer.base_trainer import BaseTrainer
 from util.logging import * 
 from logger.logger import Logger
 
-class STGCNTrainer(BaseTrainer):
+class STGODETrainer(BaseTrainer):
     def __init__(self, cls, config, args):
         self.config = config
         self.device = self.config.device
@@ -21,14 +21,17 @@ class STGCNTrainer(BaseTrainer):
     def load_dataset(self):
         if os.path.exists("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
             os.path.exists("{}/{}_test_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
-                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)):
+                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
+                os.path.exists(f'{self.config.dataset_dir}/{self.config.dataset_name}_dtw_distance.npy') and \
+                os.path.exists(f'{self.config.dataset_dir}/{self.config.dataset_name}_spatial_distance.npy'):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test_csv(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)
+            generate_train_val_test_with_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)
         num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
         self.config.num_nodes = num_nodes
         datasets = {}
+        
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
             x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
@@ -37,17 +40,43 @@ class STGCNTrainer(BaseTrainer):
                 self.mean, self.std = np.mean(x), np.std(x)
             x = (x - self.mean) / self.std
             datasets[category] = {'x': x, 'y': y}
+        
+        # distance matrix
+        dist_matrix = np.load(f'{dataset_dir}/{dataset_name}_dtw_distance.npy')
+        mean = np.mean(dist_matrix)
+        std = np.std(dist_matrix)
+        dist_matrix = (dist_matrix - mean) / std
+        sigma = sigma1
+        dist_matrix = np.exp(-dist_matrix ** 2 / sigma ** 2)
+        dtw_matrix = np.zeros_like(dist_matrix)
+        dtw_matrix[dist_matrix > thres1] = 1
+        # spatial matrix
+        dist_matrix = np.load(f'{dataset_dir}/{dataset_name}_spatial_distance.npy')
+        # normalization
+        std = np.std(dist_matrix[dist_matrix != np.float('inf')])
+        mean = np.mean(dist_matrix[dist_matrix != np.float('inf')])
+        dist_matrix = (dist_matrix - mean) / std
+        sigma = sigma2
+        sp_matrix = np.exp(- dist_matrix**2 / sigma**2)
+        sp_matrix[sp_matrix < thres2] = 0 
+
         return datasets
+
+    def get_matrices(self):
+        sp_matrix = np.load(f'{dataset_dir}/{dataset_name}_spatial_distance.npy')
+        dtw_matrix = np.load(f'{dataset_dir}/{dataset_name}_dtw_distance.npy')
+        A_sp_wave = get_normalized_adj(sp_matrix).to(device)
+        A_se_wave = get_normalized_adj(dtw_matrix).to(device)
+        return A_sp_wave, A_se_wave
     
     def setup_model(self):
-        blocks = self.config.blocks
-        Lk = get_matrix(self.config.adj_mat_path, self.config.Ks).to(self.device)
-        self.model = self.cls(self.config, blocks, Lk).to(self.device)
+        A_sp_wave, A_se_wave = self.get_matrices()
+        self.model = self.cls(self.config, A_sp_wave, A_se_wave).to(self.device)
 
     def compose_dataset(self):
         datasets = self.load_dataset()
         for category in ['train', 'val', 'test']:
-            datasets[category] = STGCNDataset(datasets[category])
+            datasets[category] = STGODEDataset(datasets[category], split_start, split_end, his_length, pred_length)
         self.num_train_iteration_per_epoch = math.ceil(len(datasets['train']) / self.config.batch_size)
         self.num_val_iteration_per_epoch = math.ceil(len(datasets['val']) / self.config.test_batch_size)
         self.num_test_iteration_per_epoch = math.ceil(len(datasets['test']) / self.config.test_batch_size)

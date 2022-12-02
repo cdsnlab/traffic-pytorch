@@ -22,7 +22,8 @@ class GMANTrainer(BaseTrainer):
         self.model = self.cls(self.config, self.SE).to(self.device)
 
     def compose_dataset(self):
-        datasets = self.load_dataset()
+        datasets, num_nodes = self.load_dataset()
+        self.config.num_nodes = num_nodes
 
         with open(os.path.join(self.config.dataset_dir, self.config.se_file), mode='r') as f:
             lines = f.readlines()

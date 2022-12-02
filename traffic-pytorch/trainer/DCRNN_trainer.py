@@ -22,7 +22,8 @@ class DCRNNTrainer(BaseTrainer):
         self.model = self.cls(self.config).to(self.device)
 
     def compose_dataset(self):
-        datasets = self.load_dataset()
+        datasets, num_nodes = self.load_dataset()
+        self.config.num_nodes = num_nodes
         for category in ['train', 'val', 'test']:
             datasets[category] = DCRNNDataset(datasets[category])
         self.num_train_iteration_per_epoch = math.ceil(len(datasets['train']) / self.config.batch_size)

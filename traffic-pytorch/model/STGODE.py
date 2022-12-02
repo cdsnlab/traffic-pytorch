@@ -178,10 +178,9 @@ class STGCNBlock(nn.Module):
         return self.batch_norm(t)
 
 
-class STGCNModel(nn.Module):
+class STGODEModel(nn.Module):
     """ the overall network framework """
-    def __init__(self, num_nodes, num_features, num_timesteps_input,
-                 num_timesteps_output, A_sp_hat, A_se_hat):
+    def __init__(self, config, A_sp_hat, A_se_hat):
         """ 
         :param num_nodes : number of nodes in the graph
         :param num_features : number of features at each node in each time step
@@ -194,29 +193,29 @@ class STGCNModel(nn.Module):
         # spatial graph
         self.sp_blocks = nn.ModuleList(
             [nn.Sequential(
-                STGCNBlock(in_channels=num_features, out_channels=[64, 32, 64],
-                num_nodes=num_nodes, A_hat=A_sp_hat),
+                STGCNBlock(in_channels=config.num_features, out_channels=[64, 32, 64],
+                num_nodes=config.num_nodes, A_hat=A_sp_hat),
                 STGCNBlock(in_channels=64, out_channels=[64, 32, 64],
-                num_nodes=num_nodes, A_hat=A_sp_hat)) for _ in range(3)
+                num_nodes=config.num_nodes, A_hat=A_sp_hat)) for _ in range(3)
             ])
         # semantic graph
         self.se_blocks = nn.ModuleList([nn.Sequential(
-                STGCNBlock(in_channels=num_features, out_channels=[64, 32, 64],
-                num_nodes=num_nodes, A_hat=A_se_hat),
+                STGCNBlock(in_channels=config.num_features, out_channels=[64, 32, 64],
+                num_nodes=config.num_nodes, A_hat=A_se_hat),
                 STGCNBlock(in_channels=64, out_channels=[64, 32, 64],
-                num_nodes=num_nodes, A_hat=A_se_hat)) for _ in range(3)
+                num_nodes=config.num_nodes, A_hat=A_se_hat)) for _ in range(3)
             ]) 
 
         self.pred = nn.Sequential(
-            nn.Linear(num_timesteps_input * 64, num_timesteps_output * 32), 
+            nn.Linear(config.num_his * 64, config.num_pred * 32), 
             nn.ReLU(),
-            nn.Linear(num_timesteps_output * 32, num_timesteps_output)
+            nn.Linear(config.num_pred * 32, config.num_pred)
         )
 
     def forward(self, x):
         """
-        :param x : input data of shape (batch_size, num_nodes, num_timesteps, num_features) == (B, N, T, F)
-        prediction for future of shape (batch_size, num_nodes, num_timesteps_output)
+        :param x : input data of shape (batch_size, num_nodes, num_his, num_his) == (B, N, T, F)
+        prediction for future of shape (batch_size, num_nodes, num_pred)
         """
         outs = []
         # spatial graph

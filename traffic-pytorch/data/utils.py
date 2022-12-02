@@ -35,6 +35,7 @@ def seq2instance(data, num_his, num_pred):
 
 def generate_train_val_test(dataset_dir, dataset_name, train_ratio, test_ratio, add_dayofweek=False, add_timeofday=False):
     df = pd.read_hdf(os.path.join(dataset_dir, dataset_name)+".h5")
+    num_nodes = df.shape[1]
     traffic = df.values
 
     time = pd.DatetimeIndex(df.index)
@@ -130,101 +131,70 @@ def get_normalized_adj(A):
     return torch.from_numpy(A_reg.astype(np.float32))
 
 
-def read_data(args):
-    """read data, generate spatial adjacency matrix and semantic adjacency matrix by dtw
-    Args:
-        sigma1: float, default=0.1, sigma for the semantic matrix
-        sigma2: float, default=10, sigma for the spatial matrix
-        thres1: float, default=0.6, the threshold for the semantic matrix
-        thres2: float, default=0.5, the threshold for the spatial matrix
-    Returns:
-        data: tensor, T * N * 1
-        dtw_matrix: array, semantic adjacency matrix
-        sp_matrix: array, spatial adjacency matrix
+# TOSDO: combine with other csv dataset
+def generate_train_val_test_with_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sigma1=0.1, sigma2=10, thres1=0.6, thres2=0.5):
     """
-    filename = args.filename
-    file = files[filename]
-    filepath = "./data/"
-    if args.remote:
-        filepath = '/home/lantu.lqq/ftemp/data/'
-    data = np.load(filepath + file[0])['data']
+    read data, generate spatial adjacency matrix and semantic adjacency matrix by dtw
+
+    :param sigma1: float, default=0.1, sigma for the semantic matrix
+    :param sigma2: float, default=10, sigma for the spatial matrix
+    :param thres1: float, default=0.6, the threshold for the semantic matrix
+    :param thres2: float, default=0.5, the threshold for the spatial matrix
+
+    :output data: tensor, T * N * 1
+    :output dtw_matrix: array, semantic adjacency matrix
+    :output sp_matrix: array, spatial adjacency matrix
+    """
+    df = pd.read_csv(os.path.join(dataset_dir, dataset_name)+".csv")
+    num_node = df.shape[1]
+    traffic = df.values
     # PEMS04 == shape: (16992, 307, 3)    feature: flow,occupy,speed
     # PEMSD7M == shape: (12672, 228, 1)
     # PEMSD7L == shape: (12672, 1026, 1)
-    num_node = data.shape[1]
+    num_step = df.shape[0]
+    train_steps = round(train_ratio * num_step)
+    test_steps = round(test_ratio * num_step)
+    val_steps = num_step - train_steps - test_steps
+
+    train = traffic[:train_steps]
+    val = traffic[train_steps:train_steps+val_steps]
+    test = traffic[-test_steps:]
+
+    np.save("{}/{}_train_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), train)
+    np.save("{}/{}_val_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), val)
+    np.save("{}/{}_test_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), test)
+
+    data = traffic
     mean_value = np.mean(data, axis=(0, 1)).reshape(1, 1, -1)
     std_value = np.std(data, axis=(0, 1)).reshape(1, 1, -1)
     data = (data - mean_value) / std_value
     mean_value = mean_value.reshape(-1)[0]
     std_value = std_value.reshape(-1)[0]
 
-    if not os.path.exists(f'data/{filename}_dtw_distance.npy'):
-        data_mean = np.mean([data[:, :, 0][24*12*i: 24*12*(i+1)] for i in range(data.shape[0]//(24*12))], axis=0)
-        data_mean = data_mean.squeeze().T 
-        dtw_distance = np.zeros((num_node, num_node))
-        for i in tqdm(range(num_node)):
-            for j in range(i, num_node):
-                dtw_distance[i][j] = fastdtw(data_mean[i], data_mean[j], radius=6)[0]
-        for i in range(num_node):
-            for j in range(i):
-                dtw_distance[i][j] = dtw_distance[j][i]
-        np.save(f'data/{filename}_dtw_distance.npy', dtw_distance)
-
-    dist_matrix = np.load(f'data/{filename}_dtw_distance.npy')
-
-    mean = np.mean(dist_matrix)
-    std = np.std(dist_matrix)
-    dist_matrix = (dist_matrix - mean) / std
-    sigma = args.sigma1
-    dist_matrix = np.exp(-dist_matrix ** 2 / sigma ** 2)
-    dtw_matrix = np.zeros_like(dist_matrix)
-    dtw_matrix[dist_matrix > args.thres1] = 1
-
-    # # use continuous semantic matrix
-    # if not os.path.exists(f'data/{filename}_dtw_c_matrix.npy'):
-    #     dist_matrix = np.load(f'data/{filename}_dtw_distance.npy')
-    #     # normalization
-    #     std = np.std(dist_matrix[dist_matrix != np.float('inf')])
-    #     mean = np.mean(dist_matrix[dist_matrix != np.float('inf')])
-    #     dist_matrix = (dist_matrix - mean) / std
-    #     sigma = 0.1
-    #     dtw_matrix = np.exp(- dist_matrix**2 / sigma**2)
-    #     dtw_matrix[dtw_matrix < 0.5] = 0 
-    #     np.save(f'data/{filename}_dtw_c_matrix.npy', dtw_matrix)
-    # dtw_matrix = np.load(f'data/{filename}_dtw_c_matrix.npy')
+    # generate semantic adjacency matrix
+    data_mean = np.mean([data[:, :, 0][24*12*i: 24*12*(i+1)] for i in range(data.shape[0]//(24*12))], axis=0)
+    data_mean = data_mean.squeeze().T 
+    dtw_distance = np.zeros((num_node, num_node))
+    for i in range(num_node):
+        for j in range(i, num_node):
+            dtw_distance[i][j] = fastdtw(data_mean[i], data_mean[j], radius=6)[0]
+    for i in range(num_node):
+        for j in range(i):
+            dtw_distance[i][j] = dtw_distance[j][i]
+    np.save(f'{dataset_dir}/{dataset_name}_dtw_distance.npy', dtw_distance)
     
-    # use continuous spatial matrix
-    if not os.path.exists(f'data/{filename}_spatial_distance.npy'):
-        with open(filepath + file[1], 'r') as fp:
-            dist_matrix = np.zeros((num_node, num_node)) + np.float('inf')
-            file = csv.reader(fp)
-            for line in file:
-                break
-            for line in file:
-                start = int(line[0])
-                end = int(line[1])
-                dist_matrix[start][end] = float(line[2])
-                dist_matrix[end][start] = float(line[2])
-            np.save(f'data/{filename}_spatial_distance.npy', dist_matrix)
-
-    # use 0/1 spatial matrix
-    # if not os.path.exists(f'data/{filename}_sp_matrix.npy'):
-    #     dist_matrix = np.load(f'data/{filename}_spatial_distance.npy')
-    #     sp_matrix = np.zeros((num_node, num_node))
-    #     sp_matrix[dist_matrix != np.float('inf')] = 1
-    #     np.save(f'data/{filename}_sp_matrix.npy', sp_matrix)
-    # sp_matrix = np.load(f'data/{filename}_sp_matrix.npy')
-
-    dist_matrix = np.load(f'data/{filename}_spatial_distance.npy')
-    # normalization
-    std = np.std(dist_matrix[dist_matrix != np.float('inf')])
-    mean = np.mean(dist_matrix[dist_matrix != np.float('inf')])
-    dist_matrix = (dist_matrix - mean) / std
-    sigma = args.sigma2
-    sp_matrix = np.exp(- dist_matrix**2 / sigma**2)
-    sp_matrix[sp_matrix < args.thres2] = 0 
-    # np.save(f'data/{filename}_sp_c_matrix.npy', sp_matrix)
-    # sp_matrix = np.load(f'data/{filename}_sp_c_matrix.npy')
+    # generate spatial adjacency matrix
+    with open(f'{dataset_dir}/{dataset_name}_distance.csv', 'r') as fp:
+        dist_matrix = np.zeros((num_node, num_node)) + np.float('inf')
+        file = csv.reader(fp)
+        for line in file:
+            break
+        for line in file:
+            start = int(line[0])
+            end = int(line[1])
+            dist_matrix[start][end] = float(line[2])
+            dist_matrix[end][start] = float(line[2])
+        np.save(f'data/{filename}_spatial_distance.npy', dist_matrix)
 
     print(f'average degree of spatial graph is {np.sum(sp_matrix > 0)/2/num_node}')
     print(f'average degree of semantic graph is {np.sum(dtw_matrix > 0)/2/num_node}')

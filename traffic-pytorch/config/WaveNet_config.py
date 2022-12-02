@@ -7,7 +7,6 @@ class WaveNet_config(BaseConfig):
         self.batch_size = 64
 
         # Model 
-        self.num_nodes = 325
         self.dropout = 0.3
         self.supports = None
         self.gcn_bool = True
