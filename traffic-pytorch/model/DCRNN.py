@@ -350,7 +350,7 @@ class DCRNNModel(nn.Module):
         self._num_nodes = config.num_nodes  # should be 207
         self._num_rnn_layers = config.num_rnn_layers  # should be 2
         self._rnn_units = config.rnn_units  # should be 64
-        self._seq_len = config.seq_len  # should be 12
+        self._seq_len = config.num_his  # should be 12
         # use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False))  # should be true
         self._output_dim = config.output_dim  # should be 1
 

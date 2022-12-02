@@ -13,7 +13,6 @@ class DCRNN_config(BaseConfig):
         self.max_diffusion_step = 2
         self.num_rnn_layers = 2
         self.rnn_units = 64
-        self.seq_len = 12
         self.output_dim = 1
         self.adj_mat_path = os.path.join(dataset_dir, dataset_name) + ".pkl"
         self.filter_type = "dual_random_walk"

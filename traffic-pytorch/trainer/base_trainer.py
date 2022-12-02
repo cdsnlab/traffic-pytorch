@@ -9,21 +9,6 @@ import shutil
 import json
 from datetime import datetime
 
-class StandardScaler:
-    """
-    Standard the input
-    """
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def transform(self, data):
-        return (data - self.mean) / self.std
-
-    def inverse_transform(self, data):
-        return (data * self.std) + self.mean
-
-
 class BaseTrainer:
     '''
     Base class for all trainers
@@ -55,7 +40,6 @@ class BaseTrainer:
             
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
-                self.scaler = StandardScaler(self.mean, self.std)
             x = (x - self.mean) / self.std 
             datasets[category] = {'x': x, 'y': y, 'tod': tod, 'dow': dow}
         
