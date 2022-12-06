@@ -3,6 +3,7 @@
 ### Data
 - pems-bay, metr-la: Download h5 files from [Google Drive](https://drive.google.com/drive/folders/10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX) and place in datasets directory.
 - PeMSD7: Download files from [STGCN Github](https://github.com/VeritasYin/STGCN_IJCAI-18) and place in datasets directory.
+- PEMS04: Download files from [STGODE Github](https://github.com/square-coder/STGODE) and [CorrSTN Github](https://github.com/drownfish19/corrstn), rename distance.csv to PEMS04_distance.csv and place in datasets directory.
 
 ### Environment
 ``` 
