@@ -5,6 +5,8 @@ import torch
 import pandas as pd
 import scipy.sparse as sp
 from scipy.sparse.linalg import eigsh
+from fastdtw import fastdtw
+import csv
 
 def load_graph_data(pkl_filename):
     sensor_ids, sensor_id_to_ind, adj_mx = load_pickle(pkl_filename)
@@ -131,8 +133,7 @@ def get_normalized_adj(A):
     return torch.from_numpy(A_reg.astype(np.float32))
 
 
-# TOSDO: combine with other csv dataset
-def generate_train_val_test_with_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sigma1=0.1, sigma2=10, thres1=0.6, thres2=0.5):
+def generate_data_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sigma1=0.1, sigma2=10, thres1=0.6, thres2=0.5):
     """
     read data, generate spatial adjacency matrix and semantic adjacency matrix by dtw
 
@@ -145,31 +146,31 @@ def generate_train_val_test_with_matrix(dataset_dir, dataset_name, train_ratio, 
     :output dtw_matrix: array, semantic adjacency matrix
     :output sp_matrix: array, spatial adjacency matrix
     """
-    df = pd.read_csv(os.path.join(dataset_dir, dataset_name)+".csv")
-    num_node = df.shape[1]
-    traffic = df.values
     # PEMS04 == shape: (16992, 307, 3)    feature: flow,occupy,speed
     # PEMSD7M == shape: (12672, 228, 1)
-    # PEMSD7L == shape: (12672, 1026, 1)
-    num_step = df.shape[0]
-    train_steps = round(train_ratio * num_step)
-    test_steps = round(test_ratio * num_step)
-    val_steps = num_step - train_steps - test_steps
-
-    train = traffic[:train_steps]
-    val = traffic[train_steps:train_steps+val_steps]
-    test = traffic[-test_steps:]
-
-    np.save("{}/{}_train_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), train)
-    np.save("{}/{}_val_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), val)
-    np.save("{}/{}_test_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), test)
-
-    data = traffic
+    # PEMSD7L == shape: (12672, 1026, 1)    
+    data = np.load(os.path.join(dataset_dir, dataset_name)+".npz")['data']
+    # use a small part of the data
+    #data = data[:24*12*3, :, :]
+    num_node = data.shape[1]
     mean_value = np.mean(data, axis=(0, 1)).reshape(1, 1, -1)
     std_value = np.std(data, axis=(0, 1)).reshape(1, 1, -1)
     data = (data - mean_value) / std_value
     mean_value = mean_value.reshape(-1)[0]
     std_value = std_value.reshape(-1)[0]
+
+    num_step = data.shape[0]
+    train_steps = round(train_ratio * num_step)
+    test_steps = round(test_ratio * num_step)
+    val_steps = num_step - train_steps - test_steps
+
+    train = data[:train_steps]
+    val = data[train_steps:train_steps+val_steps]
+    test = data[-test_steps:]
+
+    np.save("{}{}_train_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), train)
+    np.save("{}{}_val_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), val)
+    np.save("{}{}_test_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), test)
 
     # generate semantic adjacency matrix
     data_mean = np.mean([data[:, :, 0][24*12*i: 24*12*(i+1)] for i in range(data.shape[0]//(24*12))], axis=0)
@@ -181,10 +182,10 @@ def generate_train_val_test_with_matrix(dataset_dir, dataset_name, train_ratio, 
     for i in range(num_node):
         for j in range(i):
             dtw_distance[i][j] = dtw_distance[j][i]
-    np.save(f'{dataset_dir}/{dataset_name}_dtw_distance.npy', dtw_distance)
+    np.save("{}/{}_dtw_distance.npy".format(dataset_dir, dataset_name), dtw_distance)
     
     # generate spatial adjacency matrix
-    with open(f'{dataset_dir}/{dataset_name}_distance.csv', 'r') as fp:
+    with open("{}/{}_distance.csv".format(dataset_dir, dataset_name), 'r') as fp:
         dist_matrix = np.zeros((num_node, num_node)) + np.float('inf')
         file = csv.reader(fp)
         for line in file:
@@ -194,8 +195,4 @@ def generate_train_val_test_with_matrix(dataset_dir, dataset_name, train_ratio, 
             end = int(line[1])
             dist_matrix[start][end] = float(line[2])
             dist_matrix[end][start] = float(line[2])
-        np.save(f'data/{filename}_spatial_distance.npy', dist_matrix)
-
-    print(f'average degree of spatial graph is {np.sum(sp_matrix > 0)/2/num_node}')
-    print(f'average degree of semantic graph is {np.sum(dtw_matrix > 0)/2/num_node}')
-    return torch.from_numpy(data.astype(np.float32)), mean_value, std_value, dtw_matrix, sp_matrix
+        np.save("{}/{}_spatial_distance.npy".format(dataset_dir, dataset_name), dist_matrix)

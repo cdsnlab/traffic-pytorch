@@ -28,3 +28,9 @@ class STGODE_config(BaseConfig):
 
         self.use_tod = False
         self.use_dow = False
+
+        # matrix creation parameters
+        self.sigma1=0.1
+        self.sigma2=10
+        self.thres1=0.6
+        self.thres2=0.5

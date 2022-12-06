@@ -85,15 +85,16 @@ class WaveNetDataset(Dataset):
 
 
 class STGODEDataset(Dataset):
-    def __init__(self, data):
-        x = torch.tensor(data['x']).float().unsqueeze(1)
-        y = torch.tensor(data['y']).float()
-        self.x = x
-        self.y = y
+    def __init__(self, data, his_length, pred_length):
+        self.data = data.astype(np.float32)
+        self.his_length = his_length
+        self.pred_length = pred_length
     
     def __getitem__(self, index):
-        return self.x[index].float(), self.y[index].float()
-    
+        x = self.data[index: index + self.his_length]
+        y = self.data[index + self.his_length: index + self.his_length + self.pred_length][:, :, 0]
+        return torch.Tensor(x).permute(1, 0, 2), torch.Tensor(y).permute(1, 0)
+
     def __len__(self):
-        return self.y.size(0)
+        return self.data.shape[0] - self.his_length - self.pred_length + 1
 

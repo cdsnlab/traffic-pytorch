@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn 
 import numpy as np 
 from data.utils import *
-from data.datasets import STGCNDataset
+from data.datasets import STGODEDataset
 from torch.utils.data import DataLoader
 from trainer.base_trainer import BaseTrainer
 from util.logging import * 
@@ -22,61 +22,66 @@ class STGODETrainer(BaseTrainer):
         if os.path.exists("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
             os.path.exists("{}/{}_test_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
                 os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
-                os.path.exists(f'{self.config.dataset_dir}/{self.config.dataset_name}_dtw_distance.npy') and \
-                os.path.exists(f'{self.config.dataset_dir}/{self.config.dataset_name}_spatial_distance.npy'):
+                os.path.exists("{}/{}_dtw_distance.npy".format(self.config.dataset_dir, self.config.dataset_name)) and \
+                os.path.exists("{}/{}_spatial_distance.npy".format(self.config.dataset_dir, self.config.dataset_name)):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test_with_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)
-        num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
-        self.config.num_nodes = num_nodes
+            generate_data_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio,
+             self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2)
+        data = np.load(os.path.join(self.config.dataset_dir, self.config.dataset_name)+".npz")['data']
+        self.config.num_nodes = data.shape[1]
+        self.config.num_features = data.shape[2]
         datasets = {}
         
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
-            x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
-            
+            #x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
+            '''
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
             x = (x - self.mean) / self.std
-            datasets[category] = {'x': x, 'y': y}
-        
+            '''
+            datasets[category] = data
+            
+        return datasets
+
+    def get_matrices(self):
         # distance matrix
-        dist_matrix = np.load(f'{dataset_dir}/{dataset_name}_dtw_distance.npy')
+        dist_matrix = np.load("{}/{}_dtw_distance.npy".format(self.config.dataset_dir, self.config.dataset_name))
         mean = np.mean(dist_matrix)
         std = np.std(dist_matrix)
         dist_matrix = (dist_matrix - mean) / std
-        sigma = sigma1
+        sigma = self.config.sigma1
         dist_matrix = np.exp(-dist_matrix ** 2 / sigma ** 2)
         dtw_matrix = np.zeros_like(dist_matrix)
-        dtw_matrix[dist_matrix > thres1] = 1
+        dtw_matrix[dist_matrix > self.config.thres1] = 1
         # spatial matrix
-        dist_matrix = np.load(f'{dataset_dir}/{dataset_name}_spatial_distance.npy')
+        dist_matrix = np.load("{}/{}_spatial_distance.npy".format(self.config.dataset_dir, self.config.dataset_name))
         # normalization
         std = np.std(dist_matrix[dist_matrix != np.float('inf')])
         mean = np.mean(dist_matrix[dist_matrix != np.float('inf')])
         dist_matrix = (dist_matrix - mean) / std
-        sigma = sigma2
+        sigma = self.config.sigma2
         sp_matrix = np.exp(- dist_matrix**2 / sigma**2)
-        sp_matrix[sp_matrix < thres2] = 0 
+        sp_matrix[sp_matrix < self.config.thres2] = 0
 
-        return datasets
+        #print(f'average degree of spatial graph is {np.sum(sp_matrix > 0)/2/self.config.num_nodes}')
+        #print(f'average degree of semantic graph is {np.sum(dtw_matrix > 0)/2/self.config.num_nodes}')
 
-    def get_matrices(self):
-        sp_matrix = np.load(f'{dataset_dir}/{dataset_name}_spatial_distance.npy')
-        dtw_matrix = np.load(f'{dataset_dir}/{dataset_name}_dtw_distance.npy')
-        A_sp_wave = get_normalized_adj(sp_matrix).to(device)
-        A_se_wave = get_normalized_adj(dtw_matrix).to(device)
+        A_sp_wave = get_normalized_adj(sp_matrix).to(self.device)
+        A_se_wave = get_normalized_adj(dtw_matrix).to(self.device)
         return A_sp_wave, A_se_wave
     
     def setup_model(self):
         A_sp_wave, A_se_wave = self.get_matrices()
+        print(self.config.num_nodes, self.config.num_features)
         self.model = self.cls(self.config, A_sp_wave, A_se_wave).to(self.device)
 
     def compose_dataset(self):
         datasets = self.load_dataset()
         for category in ['train', 'val', 'test']:
-            datasets[category] = STGODEDataset(datasets[category], split_start, split_end, his_length, pred_length)
+            datasets[category] = STGODEDataset(datasets[category], self.config.num_his, self.config.num_pred)
         self.num_train_iteration_per_epoch = math.ceil(len(datasets['train']) / self.config.batch_size)
         self.num_val_iteration_per_epoch = math.ceil(len(datasets['val']) / self.config.test_batch_size)
         self.num_test_iteration_per_epoch = math.ceil(len(datasets['test']) / self.config.test_batch_size)

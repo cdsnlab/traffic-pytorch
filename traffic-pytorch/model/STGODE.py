@@ -164,6 +164,7 @@ class STGCNBlock(nn.Module):
         self.odeg = ODEG(out_channels[-1], 12, A_hat, time=6)
         self.temporal2 = TemporalConvNet(num_inputs=out_channels[-1],
                                    num_channels=out_channels)
+                                   
         self.batch_norm = nn.BatchNorm2d(num_nodes)
 
     def forward(self, X):
@@ -189,7 +190,7 @@ class STGODEModel(nn.Module):
         :param A_sp_hat : nomarlized adjacency spatial matrix
         :param A_se_hat : nomarlized adjacency semantic matrix
         """        
-        super(STGCNModel, self).__init__()
+        super(STGODEModel, self).__init__()
         # spatial graph
         self.sp_blocks = nn.ModuleList(
             [nn.Sequential(
