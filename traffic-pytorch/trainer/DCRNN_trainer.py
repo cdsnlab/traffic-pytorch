@@ -47,10 +47,10 @@ class DCRNNTrainer(BaseTrainer):
         for batch_idx, (data, target) in enumerate(self.train_loader):
             label = target[..., :self.config.output_dim].to(self.device)  
             data, target = data.to(self.device), target.to(self.device)
-            print(data.size(), self.config.batch_size)
+            batch_size = data.size(0)
             data = torch.transpose(data, dim0=0, dim1=1)
             target = torch.transpose(target[..., :self.config.output_dim], dim0=0, dim1=1)
-            target = torch.cat([torch.zeros(1, self.config.batch_size, self.config.num_nodes * self.config.output_dim, 1).to(self.device), target], dim=0)
+            target = torch.cat([torch.zeros(1, batch_size, self.config.num_nodes * self.config.output_dim, 1).to(self.device), target], dim=0)
 
             self.optimizer.zero_grad()
 
@@ -63,7 +63,7 @@ class DCRNNTrainer(BaseTrainer):
             output = output * self.std 
             output = output + self.mean
 
-            output = torch.transpose(output.view(self.config.num_pred, self.config.batch_size, self.config.num_nodes, 
+            output = torch.transpose(output.view(self.config.num_pred, batch_size, self.config.num_nodes, 
                             self.config.output_dim), 0, 1)  # back to (50, 12, 207, 1)
 
             loss = self.loss(output, label) 

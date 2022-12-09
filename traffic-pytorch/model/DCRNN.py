@@ -84,7 +84,7 @@ class DiffusionGraphConv(nn.Module):
         """
         # Reshape input and state to (batch_size, num_nodes, input_dim/state_dim)
         batch_size = inputs.shape[0]
-        inputs = torch.reshape(inputs, (batch_size, self._num_nodes, -1))
+        inputs = torch.reshape(inputs.to(state.device), (batch_size, self._num_nodes, -1))
         state = torch.reshape(state, (batch_size, self._num_nodes, -1))
         inputs_and_state = torch.cat([inputs, state], dim=2)
         input_size = inputs_and_state.shape[2]
@@ -100,6 +100,7 @@ class DiffusionGraphConv(nn.Module):
             pass
         else:
             for support in self._supports:
+                support = support.to(x0.device)
                 x1 = torch.sparse.mm(support, x0)
                 x = self._concat(x, x1)
                 for k in range(2, self._max_diffusion_step + 1):
