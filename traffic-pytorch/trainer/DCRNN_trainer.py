@@ -47,6 +47,7 @@ class DCRNNTrainer(BaseTrainer):
         for batch_idx, (data, target) in enumerate(self.train_loader):
             label = target[..., :self.config.output_dim].to(self.device)  
             data, target = data.to(self.device), target.to(self.device)
+            print(data.size(), self.config.batch_size)
             data = torch.transpose(data, dim0=0, dim1=1)
             target = torch.transpose(target[..., :self.config.output_dim], dim0=0, dim1=1)
             target = torch.cat([torch.zeros(1, self.config.batch_size, self.config.num_nodes * self.config.output_dim, 1).to(self.device), target], dim=0)
