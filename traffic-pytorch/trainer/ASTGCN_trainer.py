@@ -10,7 +10,7 @@ from trainer.base_trainer import BaseTrainer
 from util.logging import * 
 from logger.logger import Logger
 
-class STGCNTrainer(BaseTrainer):
+class ASTGCNTrainer(BaseTrainer):
     def __init__(self, cls, config, args):
         self.config = config
         self.device = self.config.device
@@ -25,9 +25,13 @@ class STGCNTrainer(BaseTrainer):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format='csv')
+            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format='npy')
+            num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
         num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
         self.config.num_nodes = num_nodes
+        if not os.path.exists("{}/{}_adjacency.npy".format(self.config.dataset_dir, self.config.dataset_name)):
+            print(toGreen('Generating adjacency...'))
+            generate_adjacency_matrix(self.config.dataset_dir, self.config.dataset_name, num_nodes)
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
@@ -40,9 +44,10 @@ class STGCNTrainer(BaseTrainer):
         return datasets
     
     def setup_model(self):
-        blocks = self.config.blocks
-        Lk = get_matrix(self.config.adj_mat_path, self.config.Ks).to(self.device)
-        self.model = self.cls(self.config, blocks, Lk).to(self.device)
+        adj_matrix = np.load("{}{}_adjacency.npy".format(self.config.dataset_dir, self.config.dataset_name))
+        L_tilde = scaled_laplacian(adj_mx)
+        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(device) for i in cheb_polynomial(L, config.K)]
+        self.model = self.cls(self.config, cheb_polynomials).to(self.device)
 
     def compose_dataset(self):
         datasets = self.load_dataset()
