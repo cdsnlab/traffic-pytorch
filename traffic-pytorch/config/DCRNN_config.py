@@ -22,4 +22,5 @@ class DCRNN_config(BaseConfig):
         self.max_grad_norm = 5
 
         self.use_tod = True 
-        self.use_dow = False 
+        self.use_dow = False
+        self.total_epoch = 8

@@ -5,7 +5,7 @@ Integrated platform for urban intelligence tasks including traffic and demand pr
 We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction steps.
 | Model | pems-bay (15 min) | pems-bay (30 min) | pems-bay (1 hour) |
 |-------|--|--|--|
-| [DCRNN](https://openreview.net/forum?id=SJiHXGWAZ) | | | |
+| [DCRNN](https://openreview.net/forum?id=SJiHXGWAZ) | 2.95 / 0.94 | 3.10 / 1.01 | 3.00 / 0.95 |
 | [GMAN](https://aaai.org/ojs/index.php/AAAI/article/view/5477)| 9.18 / 1.46 [Pretrained]() | | |
 | [WaveNet](https://www.ijcai.org/proceedings/2019/264)| | | |
 |[STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |

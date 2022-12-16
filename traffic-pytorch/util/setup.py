@@ -18,6 +18,8 @@ def load_args():
         help='Test set ratio (default: 0.2)')
     parser.add_argument('-num_pred', '--num_pred', default=3, type=int,
         help='Time to predict')
+    parser.add_argument('-mode', '--mode', default=None, type=str,
+        help='traffic or flow')
     parser.add_argument('-device', '--device', default='cuda:0', type=str,
         help='GPU to enable (default: cuda:0)')
     args = parser.parse_args()
@@ -42,6 +44,8 @@ def load_trainer(args):
         model_class = getattr(importlib.import_module("model.{}".format(args.model)), "{}Model".format(args.model))
         trainer_class = getattr(importlib.import_module("trainer.{}_trainer".format(args.model)), "{}Trainer".format(args.model))
         trainer = trainer_class(model_class, config, args)
+        if args.model == 'STMetaNet' and (args.mode not in ['traffic', 'flow']): 
+            raise AssertionError("Please specify mode for STMetaNet: ['traffic', 'flow']")
     except:
         print(toRed('Model undefined'))
         raise 
