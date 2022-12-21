@@ -25,7 +25,7 @@ class STGCNTrainer(BaseTrainer):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format='csv')
+            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format=self.config.format)
         num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
         self.config.num_nodes = num_nodes
         datasets = {}

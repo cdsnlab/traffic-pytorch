@@ -25,18 +25,24 @@ class ASTGCNTrainer(BaseTrainer):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format='npy')
-            num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
+            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format='npz')
         num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
+        print(np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape)
         self.config.num_nodes = num_nodes
+        #print("Number of nodes: {}".format(num_nodes))
         if not os.path.exists("{}/{}_adjacency.npy".format(self.config.dataset_dir, self.config.dataset_name)):
             print(toGreen('Generating adjacency...'))
             generate_adjacency_matrix(self.config.dataset_dir, self.config.dataset_name, num_nodes)
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
-            x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
-            
+            '''
+            if data.shape[2] < 1:
+                x, y = seq2instance(data, self.config.num_his, self.config.num_pred)
+                x = x.unsqueeze(-1)    
+            else:
+            '''
+            x, y = seq2instance(data, self.config.num_his, self.config.num_pred)              
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
             x = (x - self.mean) / self.std
@@ -45,8 +51,8 @@ class ASTGCNTrainer(BaseTrainer):
     
     def setup_model(self):
         adj_matrix = np.load("{}{}_adjacency.npy".format(self.config.dataset_dir, self.config.dataset_name))
-        L_tilde = scaled_laplacian(adj_mx)
-        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(device) for i in cheb_polynomial(L, config.K)]
+        L = scaled_laplacian(adj_matrix)
+        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(self.config.device) for i in cheb_poly(L, self.config.K)]
         self.model = self.cls(self.config, cheb_polynomials).to(self.device)
 
     def compose_dataset(self):
@@ -79,6 +85,7 @@ class ASTGCNTrainer(BaseTrainer):
             output = self.model(data)
 
             output = output.cpu()
+            print(output.shape, label.shape)
             loss = self.loss(output, label)  # loss is self-defined, need cpu input
             loss.backward()
 

@@ -96,7 +96,7 @@ class MSTGCN_submodule(nn.Module):
         return output
 
 
-class MSTGC(nn.Module):
+class MSTGCModel(nn.Module):
     def __init__(self, config, adj_matrix):
         '''
         in config
@@ -112,7 +112,7 @@ class MSTGC(nn.Module):
         :param len_input
         :return:
         '''
-        super(MSTGC, self).__init__()
+        super(MSTGCModel, self).__init__()
         L_tilde = scaled_Laplacian(adj_mx)
         cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(DEVICE) for i in cheb_polynomial(L_tilde, config.K)]
         self.submodule = MSTGCN_submodule(config.device, config.nb_block, config.in_channels, config.K, config.nb_chev_filter,\

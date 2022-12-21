@@ -20,7 +20,12 @@ class STGCN_config(BaseConfig):
         self.droprate = 0.3
 
         # self.dataset_name = dataset_name
-        self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
+        if "PEMS-M" in dataset_name or "PEMSD" in dataset_name:
+            self.dataset_name = "V_228"
+            self.format = 'csv'
+            self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
+        else:
+            self.adj_mat_path = os.path.join(dataset_dir, dataset_name) + ".csv"
 
         # Model-specific hyperparameters
         self.cl_decay_steps = 2000
@@ -28,3 +33,4 @@ class STGCN_config(BaseConfig):
 
         self.use_tod = False
         self.use_dow = False
+        self.total_epoch = 150

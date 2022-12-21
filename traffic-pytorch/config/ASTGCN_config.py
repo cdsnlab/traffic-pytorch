@@ -8,19 +8,15 @@ class ASTGCN_config(BaseConfig):
 
         # Model 
         self.batch_size = 32
-        self.Kt = 3
-        self.Ks = 3 # choises [3, 2]
-        # not sure how the blocks should be constructed
-        self.blocks = [[1, 32, 64], [64, 32, 128]]
+        self.K = 3
+        self.nb_block = 2
         self.n_his = 12
+        self.n_pred = 1
+        self.in_channels = 1
+        self.time_strides = 1
+        self.nb_chev_filter = 64
+        self.nb_time_filter = 64
         self.output_dim = 1
-       
-        # TODO
-        self.enable_bias = True
-        self.droprate = 0.3
-
-        # self.dataset_name = dataset_name
-        self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
 
         # Model-specific hyperparameters
         self.cl_decay_steps = 2000
