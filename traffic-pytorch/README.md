@@ -8,8 +8,8 @@ We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction 
 | [DCRNN](https://openreview.net/forum?id=SJiHXGWAZ) | 2.95 / 0.94 | 3.10 / 1.01 | 3.00 / 0.95 |
 | [GMAN](https://aaai.org/ojs/index.php/AAAI/article/view/5477)| 9.18 / 1.46 [Pretrained]() | | |
 | [WaveNet](https://www.ijcai.org/proceedings/2019/264)| | | |
-|[STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |
-| [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| | | |
+| [STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |
+| [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| 17.42 / 4.13 | 16.45 / 4.00 | 16.69 / 4.03 |
 
 ## Demand
 
@@ -19,7 +19,6 @@ We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction 
 - pems-bay, metr-la: Download h5 files from [Google Drive](https://drive.google.com/drive/folders/10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX) and place in datasets directory.
 - PeMSD7: Download files from [STGCN Github](https://github.com/VeritasYin/STGCN_IJCAI-18) and place in datasets directory.
 - PEMS: Download files from [ASTGNN Github](https://github.com/guoshnBJTU/ASTGNN) and place in datasets directory.
-
 
 ### Environment
 ``` 
