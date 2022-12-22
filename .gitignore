@@ -8,6 +8,8 @@
 *.npy
 *.csv
 *.npz
+*.pkl
+*.pickle
 
 # Cache
 __pycache__/

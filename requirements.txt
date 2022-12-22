@@ -7,3 +7,5 @@ tensorboardx==2.5.1
 torchdiffeq==0.2.3
 fastdtw==0.3.4
 dgl==0.9.1 
+h5py==3.7.0
+matplotlib==3.5.3
