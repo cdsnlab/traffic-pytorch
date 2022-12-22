@@ -10,6 +10,7 @@
 *.npz
 *.pkl
 *.pickle
+*.txt
 
 # Cache
 __pycache__/
