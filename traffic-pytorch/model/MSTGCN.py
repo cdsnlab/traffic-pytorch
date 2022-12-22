@@ -2,7 +2,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from lib.utils import scaled_Laplacian, cheb_polynomial
 
 
 class cheb_conv(nn.Module):
@@ -96,8 +95,8 @@ class MSTGCN_submodule(nn.Module):
         return output
 
 
-class MSTGCModel(nn.Module):
-    def __init__(self, config, adj_matrix):
+class MSTGCNModel(nn.Module):
+    def __init__(self, config, cheb_polynomials):
         '''
         in config
         :param device:
@@ -112,15 +111,20 @@ class MSTGCModel(nn.Module):
         :param len_input
         :return:
         '''
-        super(MSTGCModel, self).__init__()
-        L_tilde = scaled_Laplacian(adj_mx)
-        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(DEVICE) for i in cheb_polynomial(L_tilde, config.K)]
+        super(MSTGCNModel, self).__init__()
         self.submodule = MSTGCN_submodule(config.device, config.nb_block, config.in_channels, config.K, config.nb_chev_filter,\
-         config.nb_time_filter, config.time_strides, cheb_polynomials, config.num_for_predict, config.len_input)
+         config.nb_time_filter, config.time_strides, cheb_polynomials, config.n_pred, config.n_his)
+        for p in self.submodule.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+            else:
+                nn.init.uniform_(p)
 
     def forward(self, x):
         '''
         :param x: (B, N_nodes, F_in, T_in)
         :return: (B, N_nodes, T_out)
         '''
+        x = x.squeeze(-1)
+        x = x.permute(0, 3, 1, 2)
         return self.submodule(x)

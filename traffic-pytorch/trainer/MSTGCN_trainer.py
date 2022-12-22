@@ -10,7 +10,7 @@ from trainer.base_trainer import BaseTrainer
 from util.logging import * 
 from logger.logger import Logger
 
-class STGCNTrainer(BaseTrainer):
+class MSTGCNTrainer(BaseTrainer):
     def __init__(self, cls, config, args):
         self.config = config
         self.device = self.config.device
@@ -25,24 +25,28 @@ class STGCNTrainer(BaseTrainer):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format=self.config.data_format)
-        num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
-        self.config.num_nodes = num_nodes
+            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, self.config.data_format)
+            #generate_data_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio,
+            # self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2, self.config.data_format)
+        data = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio))
+        self.config.num_nodes = data.shape[1]
+        self.configin_channels = data.shape[2]
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
-            x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
-            
+            x, y = seq2instance3d(data, self.config.num_his, self.config.num_pred)              
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
             x = (x - self.mean) / self.std
+        
             datasets[category] = {'x': x, 'y': y}
         return datasets
     
     def setup_model(self):
-        blocks = self.config.blocks
-        Lk = get_matrix(self.config.adj_mat_path, self.config.Ks).to(self.device)
-        self.model = self.cls(self.config, blocks, Lk).to(self.device)
+        adj_matrix = pd.read_csv(self.config.adj_mat_path, header=None).values.astype(float)
+        L = scaled_laplacian(adj_matrix)
+        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(self.config.device) for i in cheb_poly(L, self.config.K)]
+        self.model = self.cls(self.config, cheb_polynomials).to(self.device)
 
     def compose_dataset(self):
         datasets = self.load_dataset()
@@ -67,6 +71,8 @@ class STGCNTrainer(BaseTrainer):
         total_metrics = np.zeros(len(self.metrics))
 
         for batch_idx, (data, target) in enumerate(self.train_loader):
+            # TODO: Check if it is correct. Model may not be training properly
+            target = target.squeeze().transpose(1,2)
             label = target[..., :self.config.output_dim]  # (..., 1)  supposed to be numpy array
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
@@ -74,6 +80,7 @@ class STGCNTrainer(BaseTrainer):
             output = self.model(data)
 
             output = output.cpu()
+            #print(output.shape, label.shape)
             loss = self.loss(output, label)  # loss is self-defined, need cpu input
             loss.backward()
 

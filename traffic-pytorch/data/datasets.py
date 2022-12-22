@@ -98,6 +98,7 @@ class STGODEDataset(Dataset):
     def __len__(self):
         return self.data.shape[0] - self.his_length - self.pred_length + 1
 
+
 class ConvLSTMDataset(Dataset):
     def __init__(self, data):
         x = data['x'].reshape(data['x'].shape[0], data['x'].shape[1], 32*32, 2)

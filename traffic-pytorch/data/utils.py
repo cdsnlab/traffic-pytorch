@@ -34,6 +34,16 @@ def seq2instance(data, num_his, num_pred):
         y[i] = data[i + num_his: i + num_his + num_pred, :]
     return x, y
 
+def seq2instance3d(data, num_his, num_pred):
+    num_step, dim1, dim2 = data.shape
+    num_sample = num_step - num_his - num_pred + 1
+    x = np.zeros((num_sample, num_his, dim1, dim2))
+    y = np.zeros((num_sample, num_pred, dim1, dim2))
+    for i in range(num_sample):
+        x[i] = data[i: i + num_his, :, :]
+        y[i] = data[i + num_his: i + num_his + num_pred, :, :]
+    return x, y
+
 # TODO: finishe preprocessing for multiple velocity comp
 def seq2instance_3d(data, num_his, num_pred):
     num_step, dims, vel_feat = data.shape
@@ -95,7 +105,7 @@ def generate_train_val_test(dataset_dir, dataset_name, train_ratio, test_ratio, 
         np.save("{}{}_test_tod_{}_{}.npy".format(dataset_dir, dataset_name, train_ratio, test_ratio), timeofday_test)
 
 
-def generate_data_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sigma1=0.1, sigma2=10, thres1=0.6, thres2=0.5):
+def generate_data_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sigma1=0.1, sigma2=10, thres1=0.6, thres2=0.5, format='npz'):
     """
     read data, generate spatial adjacency matrix and semantic adjacency matrix by dtw
 
@@ -111,7 +121,13 @@ def generate_data_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sig
     # PEMS04 == shape: (16992, 307, 3)    feature: flow,occupy,speed
     # PEMSD7M == shape: (12672, 228, 1)
     # PEMSD7L == shape: (12672, 1026, 1)    
-    data = np.load(os.path.join(dataset_dir, dataset_name)+".npz")['data']
+    if format == 'npz':
+        data = np.load(os.path.join(dataset_dir, dataset_name)+".npz")['data']
+    elif format == 'h5':
+        data = pd.read_hdf(os.path.join(dataset_dir, dataset_name)+".h5").values
+        data = np.expand_dims(data, -1)
+    else:
+        data = pd.read_csv(os.path.join(dataset_dir, dataset_name)+".csv").values
     # use a small part of the data
     #data = data[:24*12*3, :, :]
     num_node = data.shape[1]
@@ -153,8 +169,8 @@ def generate_data_matrix(dataset_dir, dataset_name, train_ratio, test_ratio, sig
         for line in file:
             break
         for line in file:
-            start = int(line[0])
-            end = int(line[1])
+            start = int(float(line[0]))
+            end = int(float(line[1]))
             dist_matrix[start][end] = float(line[2])
             dist_matrix[end][start] = float(line[2])
         np.save("{}/{}_spatial_distance.npy".format(dataset_dir, dataset_name), dist_matrix)
@@ -181,7 +197,6 @@ def cheb_poly(L, Ks):
 
 def get_matrix(file_path, Ks):
     W = pd.read_csv(file_path, header=None).values.astype(float)
-    print(W.shape)
     L = scaled_laplacian(W)
     Lk = cheb_poly(L, Ks)
     Lk = torch.Tensor(Lk.astype(np.float32))
@@ -201,16 +216,16 @@ def get_normalized_adj(A):
     return torch.from_numpy(A_reg.astype(np.float32))
 
 
+'''
 def generate_adjacency_matrix(dataset_dir, dataset_name, num_of_vertices, id_filename=None):
-    '''
-    Parameters
-    ----------
-    distance_df_filename: str, path of the csv file contains edges information
-    num_of_vertices: int, the number of vertices
-    Returns
-    ----------
-    A: np.ndarray, adjacency matrix
-    '''
+    #Parameters
+    #----------
+    #distance_df_filename: str, path of the csv file contains edges information
+    #num_of_vertices: int, the number of vertices
+    #Returns
+    #----------
+    #A: np.ndarray, adjacency matrix
+
     A = np.zeros((int(num_of_vertices), int(num_of_vertices)),
                     dtype=np.float32)
     distaneA = np.zeros((int(num_of_vertices), int(num_of_vertices)),
@@ -241,5 +256,4 @@ def generate_adjacency_matrix(dataset_dir, dataset_name, num_of_vertices, id_fil
                 distaneA[i, j] = distance
     np.save("{}/{}_adjacency.npy".format(dataset_dir, dataset_name), A)
     np.save("{}/{}_distance.npy".format(dataset_dir, dataset_name), distaneA)
-
-
+'''

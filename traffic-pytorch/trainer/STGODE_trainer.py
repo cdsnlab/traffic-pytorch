@@ -28,8 +28,12 @@ class STGODETrainer(BaseTrainer):
         else:    
             print(toGreen('Generating dataset...'))
             generate_data_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio,
-             self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2)
-        data = np.load(os.path.join(self.config.dataset_dir, self.config.dataset_name)+".npz")['data']
+             self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2, self.config.data_format)
+        if self.config.data_format == 'h5':
+            data = pd.read_hdf(os.path.join(self.config.dataset_dir, self.config.dataset_name)+".h5").values
+            data = np.expand_dims(data, -1)
+        elif self.config.data_format == 'npz':
+            data = np.load(os.path.join(self.config.dataset_dir, self.config.dataset_name)+".npz")['data']
         self.config.num_nodes = data.shape[1]
         self.config.num_features = data.shape[2]
         datasets = {}

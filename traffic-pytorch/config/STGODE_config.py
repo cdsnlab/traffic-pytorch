@@ -20,7 +20,7 @@ class STGODE_config(BaseConfig):
         self.droprate = 0.3
 
         # self.dataset_name = dataset_name
-        self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
+        self.data_format = 'h5'#'npz' for pems data
 
         # Model-specific hyperparameters
         self.cl_decay_steps = 2000
