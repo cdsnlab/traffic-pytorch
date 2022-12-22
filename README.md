@@ -12,7 +12,10 @@ We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction 
 | [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| | | |
 
 ## Demand
-
+We report MAE in Beijing taxi flow prediction dataset for each prediction steps.
+| Model | bj-flow (15 min) | bj-flow  (30 min) | bj-flow (1 hour) |
+|-------|--|--|--|
+| ConvLSTM | | | | |
 
 ## Getting Started
 ### Data
