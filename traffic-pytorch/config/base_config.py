@@ -19,7 +19,7 @@ class BaseConfig:
 
         # Train 
         self.optimizer = 'Adam'
-        self.loss = 'MaskedMSE'
+        self.loss = 'MaskedMAE'
         self.metrics = ['MaskedMAE']
         self.scheduler = 'MultiStepLR'
         self.scheduler_args = {

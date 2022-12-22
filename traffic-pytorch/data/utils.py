@@ -4,7 +4,6 @@ import os
 import torch
 import pandas as pd
 import scipy.sparse as sp
-from scipy.sparse.linalg import eigsh
 from fastdtw import fastdtw
 import csv
 
