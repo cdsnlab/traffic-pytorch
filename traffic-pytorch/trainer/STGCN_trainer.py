@@ -31,8 +31,8 @@ class STGCNTrainer(BaseTrainer):
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
+            data = data.squeeze()
             x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
-            
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
             x = (x - self.mean) / self.std

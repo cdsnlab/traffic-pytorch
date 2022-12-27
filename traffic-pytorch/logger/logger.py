@@ -12,17 +12,19 @@ class Logger():
         self.logger.add_scalars('loss',{
                 'trainiing_loss': loss
             }, epoch)
-        self.logger.add_scalars('metrics',{
-                'trainiing_metrics': metrics
-        }, epoch)
+        for i, metric in enumerate(metrics):
+            self.logger.add_scalars('metrics',{
+                    'trainiing_metrics_{}'.format(i): metric
+            }, epoch)
 
     def log_validation(self, loss, metrics, epoch):
         self.logger.add_scalars('loss',{
                 'validation_loss': loss,
             }, epoch)
-        self.logger.add_scalars('metrics',{
-                'validation_metrics': metrics
-        }, epoch)
+        for i, metric in enumerate(metrics):
+            self.logger.add_scalars('metrics',{
+                    'validation_metrics_{}'.format(i): metric
+            }, epoch)
     
     def close(self):
         self.logger.close()

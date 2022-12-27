@@ -72,7 +72,7 @@ class BaseTrainer:
         print(toGreen('\nSETUP TRAINING'))
         self.setup_train()
         print(toGreen('\nTRAINING START'))
-        for epoch in range(self.config.total_epoch):
+        for epoch in range(self.config.start_epoch, self.config.total_epoch):
             total_loss, total_metrics = self.train_epoch(epoch)
             avg_loss = total_loss / len(self.train_loader)
             avg_metrics = total_metrics / len(self.train_loader)
@@ -113,6 +113,11 @@ class BaseTrainer:
             raise 
 
         print_setup(self.config.loss, self.config.metrics, self.config.optimizer, self.config.scheduler)
+
+        # load model
+        if self.config.model_checkpoint is not None:
+            self.model.load_state_dict(torch.load(self.config.model_checkpoint))
+            print(toGreen('Model loaded from {}'.format(self.config.load_model)))
     
     def _eval_metrics(self, output, target):
         acc_metrics = []
@@ -128,3 +133,4 @@ class BaseTrainer:
         shutil.copy('config/{}.py'.format(args.config), save_dir + 'config.txt')
         with open(save_dir + 'cmd_args.txt', 'w') as f:
             json.dump(args.__dict__, f, indent=2)
+        
