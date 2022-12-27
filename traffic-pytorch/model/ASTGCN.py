@@ -245,9 +245,9 @@ class ASTGCN_submodule(nn.Module):
         :param x: (B, N_nodes, F_in, T_in)
         :return: (B, N_nodes, T_out)
         '''
-        print(x.shape)
-        
+        x = x.squeeze(-1)
         x = x.permute(0, 3, 1, 2)
+        #print(x.shape)
         for block in self.BlockList:
             x = block(x)
 

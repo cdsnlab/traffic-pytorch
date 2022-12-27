@@ -4,7 +4,7 @@ class BaseConfig:
         self.device = device 
 
         # Data
-        self.format = 'h5'
+        self.data_format = 'h5'
         self.test_batch_size = 1
         self.num_his = 12 
         self.num_pred = 3

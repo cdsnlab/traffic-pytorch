@@ -10,6 +10,8 @@ We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction 
 | [WaveNet](https://www.ijcai.org/proceedings/2019/264)| | | |
 |[STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |
 | [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| | | |
+| [STGODE](https://dl.acm.org/doi/10.1145/3447548.3467430)| | | |
+| [ASTGCN](https://ojs.aaai.org/index.php/AAAI/article/view/3881)| | | |
 
 ## Getting Started
 ### Data
