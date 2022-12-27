@@ -9,9 +9,9 @@ We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction 
 | [GMAN](https://aaai.org/ojs/index.php/AAAI/article/view/5477)| 9.18 / 1.46 [Pretrained]() | | |
 | [WaveNet](https://www.ijcai.org/proceedings/2019/264)| | | |
 |[STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |
-| [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| | | |
-| [STGODE](https://dl.acm.org/doi/10.1145/3447548.3467430)| | | |
-| [ASTGCN](https://ojs.aaai.org/index.php/AAAI/article/view/3881)| | | |
+| [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| 1.11 / 0.48 | 1.13 / 0.48 | 1.12 / 0.48 |
+| [STGODE](https://dl.acm.org/doi/10.1145/3447548.3467430)| 0.0 / 0.0 | 0.0 / 0.0 | 0.0 / 0.0 |
+| [ASTGCN](https://ojs.aaai.org/index.php/AAAI/article/view/3881)| 0.09 / 0.15 | 0.11 / 0.14 | 0.09 / 0.14 |
 
 ## Getting Started
 ### Data
