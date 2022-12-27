@@ -11,14 +11,6 @@ We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction 
 |[STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |
 | [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| | | |
 
-## Demand
-![bj-flow](traffic-pytorch/vis/bj.gif)
-
-We report MAE in Beijing taxi flow prediction dataset for each prediction steps.
-| Model | bj-flow (15 min) | bj-flow  (30 min) | bj-flow (1 hour) |
-|-------|--|--|--|
-| ConvLSTM | | | | |
-
 ## Getting Started
 ### Data
 - pems-bay, metr-la: Download h5 files from [Google Drive](https://drive.google.com/drive/folders/10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX) and place in datasets directory.
