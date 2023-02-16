@@ -20,14 +20,14 @@ class BaseConfig:
         # Train 
         self.optimizer = 'Adam'
         self.loss = 'MaskedMAE'
-        self.metrics = ['MaskedMSE', 'MaskedMAE']
+        self.metrics = ['MaskedRMSE', 'MaskedMAE']
         self.scheduler = 'MultiStepLR'
         self.scheduler_args = {
-			"milestones": [20, 30, 40, 50],
-            "gamma": 0.1
+			"milestones": [8, 16],
+            "gamma": 0.5
         }
         self.model_checkpoint = None # checkpoint path if continue training
         self.null_value = 0.0
         self.start_epoch = 0
-        self.total_epoch = 60 
+        self.total_epoch = 24 
         self.valid_every_epoch = 4 # Validate epoch

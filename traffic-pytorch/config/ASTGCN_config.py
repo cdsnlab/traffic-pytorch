@@ -35,3 +35,8 @@ class ASTGCN_config(BaseConfig):
 
         self.use_tod = False
         self.use_dow = False
+        self.total_epoch = 150
+        self.scheduler_args = {
+			"milestones": [50, 100],
+            "gamma": 0.5
+        }

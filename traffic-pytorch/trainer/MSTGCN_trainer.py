@@ -28,12 +28,14 @@ class MSTGCNTrainer(BaseTrainer):
             generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, self.config.data_format)
             #generate_data_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio,
             # self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2, self.config.data_format)
-        data = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio))
+        data = np.load("{}{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio))
+        data = data[:, :, np.newaxis]
         self.config.num_nodes = data.shape[1]
-        self.configin_channels = data.shape[2]
+        self.config.in_channels = data.shape[2]
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
+            data = data[:, :, np.newaxis]
             x, y = seq2instance3d(data, self.config.num_his, self.config.num_pred)              
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)

@@ -23,4 +23,4 @@ class DCRNN_config(BaseConfig):
 
         self.use_tod = True 
         self.use_dow = False
-        self.total_epoch = 8
+        self.total_epoch = 24

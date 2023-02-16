@@ -1,4 +1,5 @@
 from config.base_config import BaseConfig
+import os
 
 class STDEN_config(BaseConfig):
     def __init__(self, device, dataset_dir, dataset_name, train_ratio, test_ratio):
@@ -9,6 +10,7 @@ class STDEN_config(BaseConfig):
         self.input_dim = 1
         self.output_dim = 1 
         self.use_curriculum_learning = False
+        self.adj_file = os.path.join(dataset_dir, '{}-adj.npy'.format(dataset_name))
 
         self.use_tod = True 
         self.use_dow = True 

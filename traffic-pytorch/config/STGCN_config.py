@@ -22,7 +22,7 @@ class STGCN_config(BaseConfig):
         # self.dataset_name = dataset_name
         if "PEMS-M" in dataset_name or "PEMSD" in dataset_name:
             self.dataset_name = "V_228"
-            self.format = 'csv'
+            self.data_format = 'csv'
             self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
         else:
             self.adj_mat_path = os.path.join(dataset_dir, dataset_name) + ".csv"
@@ -34,3 +34,7 @@ class STGCN_config(BaseConfig):
         self.use_tod = False
         self.use_dow = False
         self.total_epoch = 150
+        self.scheduler_args = {
+			"milestones": [50, 100],
+            "gamma": 0.5
+        }

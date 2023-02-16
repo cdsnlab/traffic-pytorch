@@ -21,19 +21,9 @@ class STDENTrainer(BaseTrainer):
         self.model = self.cls(self.config, self.adj).to(self.device)
 
     def compose_dataset(self):
-        datasets = self.load_dataset()
-
-        with open(os.path.join(self.config.dataset_dir, self.config.adj_file), mode='r') as f:
-            lines = f.readlines()
-            temp = lines[0].split(' ')
-            num_vertex, dims = int(temp[0]), int(temp[1])
-            adj = torch.zeros((num_vertex, dims), dtype=torch.float32)
-            for line in lines[1:]:
-                temp = line.split(' ')
-                index = int(temp[0])
-                adj[index] = torch.tensor([float(ch) for ch in temp[1:]])
-            self.adj = adj
-            self.num_edges = (adj > 0.).sum()
+        datasets, _ = self.load_dataset()
+        self.adj = torch.tensor(np.load(self.config.adj_file)).to(self.config.device)
+        self.num_edges = (self.adj > 0.).sum()
 
         for category in ['train', 'val', 'test']:
             datasets[category] = STDENDataset(datasets[category])

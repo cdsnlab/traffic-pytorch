@@ -2,16 +2,26 @@
 Integrated platform for urban intelligence tasks including traffic and demand prediction.
 
 ## Traffic prediction
-We report MaskedMSE / MaskedMAE and provide pretrained file for each prediction steps.
-| Model | pems-bay (15 min) | pems-bay (30 min) | pems-bay (1 hour) |
-|-------|--|--|--|
-| [DCRNN](https://openreview.net/forum?id=SJiHXGWAZ) | 2.95 / 0.94 | 3.10 / 1.01 | 3.00 / 0.95 |
-| [GMAN](https://aaai.org/ojs/index.php/AAAI/article/view/5477)| 9.18 / 1.46 [Pretrained]() | | |
-| [WaveNet](https://www.ijcai.org/proceedings/2019/264)| | | |
-|[STDEN](https://ojs.aaai.org/index.php/AAAI/article/view/20322)| | | |
-| [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| 1.11 / 0.48 | 1.13 / 0.48 | 1.12 / 0.48 |
-| [STGODE](https://dl.acm.org/doi/10.1145/3447548.3467430)| 0.0 / 0.0 | 0.0 / 0.0 | 0.0 / 0.0 |
-| [ASTGCN](https://ojs.aaai.org/index.php/AAAI/article/view/3881)| 0.09 / 0.15 | 0.11 / 0.14 | 0.09 / 0.14 |
+We report MAE / RMSE in pems-bay dataset.
+
+![](traffic-pytorch/repo/pems-bay.png)
+
+| Model | pems-bay (12 steps) |
+|-------|--|
+| [DCRNN](https://openreview.net/forum?id=SJiHXGWAZ) | |
+| [GMAN](https://aaai.org/ojs/index.php/AAAI/article/view/5477)| |
+| [WaveNet](https://www.ijcai.org/proceedings/2019/264)| |
+
+We report MAE / RMSE in PeMS dataset.
+
+![](traffic-pytorch/repo/pems.png)
+
+| Model | PeMS (9 steps) |
+|-------|--|
+| [STGCN](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/view/17135)| |
+| [ASTGCN](https://ojs.aaai.org/index.php/AAAI/article/view/3881)| |
+| [MSTGCN](https://ojs.aaai.org/index.php/AAAI/article/view/3881)| |
+
 
 ## Getting Started
 ### Data

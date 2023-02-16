@@ -378,7 +378,7 @@ class STDENModel(nn.Module):
         self.latent_dim = config.latent_dim
 
         # recognition net
-        self.encoder_z0 = Encoder_z0_RNN(adj_mx, config)
+        self.encoder_z0 = Encoder_z0_RNN(config, adj_mx)
 
         # ode solver
         self.n_traj_samples = config.n_traj_samples
