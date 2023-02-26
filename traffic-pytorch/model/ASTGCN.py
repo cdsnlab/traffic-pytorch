@@ -61,31 +61,19 @@ class cheb_conv_withSAt(nn.Module):
         :param x: (batch_size, N, F_in, T)
         :return: (batch_size, N, F_out, T)
         '''
-
         batch_size, num_of_vertices, in_channels, num_of_timesteps = x.shape
-
         outputs = []
-
+        
         for time_step in range(num_of_timesteps):
-
             graph_signal = x[:, :, :, time_step]  # (b, N, F_in)
-
             output = torch.zeros(batch_size, num_of_vertices, self.out_channels).to(self.DEVICE)  # (b, N, F_out)
-
             for k in range(self.K):
-
                 T_k = self.cheb_polynomials[k]  # (N,N)
-
-                T_k_with_at = T_k.mul(spatial_attention)   # (N,N)*(N,N) = (N,N) 多行和为1, 按着列进行归一化
-
+                T_k_with_at = T_k.mul(spatial_attention)   # (N,N)*(N,N) = (N,N)
                 theta_k = self.Theta[k]  # (in_channel, out_channel)
-
-                rhs = T_k_with_at.permute(0, 2, 1).matmul(graph_signal)  # (N, N)(b, N, F_in) = (b, N, F_in) 因为是左乘，所以多行和为1变为多列和为1，即一行之和为1，进行左乘
-
+                rhs = T_k_with_at.permute(0, 2, 1).matmul(graph_signal)  # (N, N)(b, N, F_in) = (b, N, F_in)
                 output = output + rhs.matmul(theta_k)  # (b, N, F_in)(F_in, F_out) = (b, N, F_out)
-
             outputs.append(output.unsqueeze(-1))  # (b, N, F_out, 1)
-
         return F.relu(torch.cat(outputs, dim=-1))  # (b, N, F_out, T)
 
 
@@ -104,20 +92,17 @@ class Temporal_Attention_layer(nn.Module):
         :return: (B, T, T)
         '''
         _, num_of_vertices, num_of_features, num_of_timesteps = x.shape
-
-        lhs = torch.matmul(torch.matmul(x.permute(0, 3, 2, 1), self.U1), self.U2)
+        #print(x.shape, self.U1.shape, self.U2.shape, self.U3.shape)
+        temp = torch.matmul(x.permute(0, 3, 2, 1), self.U1)
+        lhs = torch.matmul(temp, self.U2)
         # x:(B, N, F_in, T) -> (B, T, F_in, N)
         # (B, T, F_in, N)(N) -> (B,T,F_in)
         # (B,T,F_in)(F_in,N)->(B,T,N)
-
         rhs = torch.matmul(self.U3, x)  # (F)(B,N,F,T)->(B, N, T)
-
+        #print(lhs.shape, rhs.shape)
         product = torch.matmul(lhs, rhs)  # (B,T,N)(B,N,T)->(B,T,T)
-
         E = torch.matmul(self.Ve, torch.sigmoid(product + self.be))  # (B, T, T)
-
         E_normalized = F.softmax(E, dim=1)
-
         return E_normalized
 
 
@@ -152,23 +137,14 @@ class cheb_conv(nn.Module):
         outputs = []
 
         for time_step in range(num_of_timesteps):
-
             graph_signal = x[:, :, :, time_step]  # (b, N, F_in)
-
             output = torch.zeros(batch_size, num_of_vertices, self.out_channels).to(self.DEVICE)  # (b, N, F_out)
-
             for k in range(self.K):
-
                 T_k = self.cheb_polynomials[k]  # (N,N)
-
                 theta_k = self.Theta[k]  # (in_channel, out_channel)
-
                 rhs = graph_signal.permute(0, 2, 1).matmul(T_k).permute(0, 2, 1)
-
                 output = output + rhs.matmul(theta_k)
-
             outputs.append(output.unsqueeze(-1))
-
         return F.relu(torch.cat(outputs, dim=-1))
 
 
@@ -189,11 +165,10 @@ class ASTGCN_block(nn.Module):
         :return: (batch_size, N, nb_time_filter, T)
         '''
         batch_size, num_of_vertices, num_of_features, num_of_timesteps = x.shape
-
         # TAt
         temporal_At = self.TAt(x)  # (b, T, T)
-
-        x_TAt = torch.matmul(x.reshape(batch_size, -1, num_of_timesteps), temporal_At).reshape(batch_size, num_of_vertices, num_of_features, num_of_timesteps)
+        temp = torch.matmul(x.reshape(batch_size, -1, num_of_timesteps), temporal_At)
+        x_TAt = temp.reshape(batch_size, num_of_vertices, num_of_features, num_of_timesteps)
 
         # SAt
         spatial_At = self.SAt(x_TAt)
@@ -206,11 +181,10 @@ class ASTGCN_block(nn.Module):
         time_conv_output = self.time_conv(spatial_gcn.permute(0, 2, 1, 3))  # (b,N,F,T)->(b,F,N,T) 用(1,3)的卷积核去做->(b,F,N,T)
 
         # residual shortcut
-        x_residual = self.residual_conv(x.permute(0, 2, 1, 3))  # (b,N,F,T)->(b,F,N,T) 用(1,1)的卷积核去做->(b,F,N,T)
-
-        x_residual = self.ln(F.relu(x_residual + time_conv_output).permute(0, 3, 2, 1)).permute(0, 2, 3, 1)
+        x_residual = self.residual_conv(x.permute(0, 2, 1, 3))  # (b,N,F,T)->(b,F,N,T)
+        temp = F.relu(x_residual + time_conv_output).permute(0, 3, 2, 1)
+        x_residual = self.ln(temp).permute(0, 2, 3, 1)
         # (b,F,N,T)->(b,T,N,F) -ln-> (b,T,N,F)->(b,N,F,T)
-
         return x_residual
 
 
@@ -245,8 +219,7 @@ class ASTGCN_submodule(nn.Module):
         :param x: (B, N_nodes, F_in, T_in)
         :return: (B, N_nodes, T_out)
         '''
-        x = x.squeeze(-1)
-        x = x.permute(0, 3, 1, 2)
+        #x = x.permute(0, 3, 1, 2)
         #print(x.shape)
         for block in self.BlockList:
             x = block(x)

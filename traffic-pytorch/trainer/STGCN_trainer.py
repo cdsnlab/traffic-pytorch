@@ -21,18 +21,26 @@ class STGCNTrainer(BaseTrainer):
     def load_dataset(self):
         if os.path.exists("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
             os.path.exists("{}/{}_test_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
-                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)):
+                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
+                os.path.exists("{}/{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, 'adj.npy')):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
             generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format=self.config.data_format)
+            #generate_data_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio,
+            # self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2, self.config.data_format)
+            adj_filename = self.config.dataset_dir + self.config.dataset_name + ".csv"
+            data = np.load("{}{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio))
+            num_of_vertices = data.shape[1]
+            adj_mx, distance_mx = get_adjacency_matrix(adj_filename, num_of_vertices, None)
+            np.save(self.config.dataset_dir + self.config.dataset_name + "_adj.npy", adj_mx)
         num_nodes = np.load("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)).shape[1]
         self.config.num_nodes = num_nodes
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
             data = data.squeeze()
-            x, y = seq2instance(data, self.config.num_his, self.config.num_pred)  
+            x, y = seq2instance_3d(data, self.config.num_his, self.config.num_pred)  
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
             x = (x - self.mean) / self.std
@@ -70,7 +78,7 @@ class STGCNTrainer(BaseTrainer):
             label = target[..., :self.config.output_dim]  # (..., 1)  supposed to be numpy array
             data, target = data.to(self.device), target.to(self.device)
             self.optimizer.zero_grad()
-
+            data = data.squeeze(1).permute(0, 3, 1, 2)
             output = self.model(data)
 
             output = output.cpu()
@@ -99,6 +107,7 @@ class STGCNTrainer(BaseTrainer):
         for batch_idx, (data, target) in enumerate(self.test_loader if is_test else self.val_loader):
             label = target[..., :self.config.output_dim]
             data, target = data.to(self.device), target.to(self.device)
+            data = data.squeeze(1).permute(0, 3, 1, 2)
             self.optimizer.zero_grad()
 
             with torch.no_grad():

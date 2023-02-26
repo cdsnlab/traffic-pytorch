@@ -21,21 +21,28 @@ class ASTGCNTrainer(BaseTrainer):
     def load_dataset(self):
         if os.path.exists("{}/{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
             os.path.exists("{}/{}_test_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
-                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)):
+                os.path.exists("{}/{}_val_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio)) and \
+                os.path.exists("{}/{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, 'adj.npy')):
             print(toGreen('Found generated dataset in '+self.config.dataset_dir))
         else:    
             print(toGreen('Generating dataset...'))
-            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, self.config.data_format)
+            generate_train_val_test(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio, format=self.config.data_format)
             #generate_data_matrix(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio,
             # self.config.test_ratio, self.config.sigma1, self.config.sigma2, self.config.thres1, self.config.thres2, self.config.data_format)
+            adj_filename = self.config.dataset_dir + self.config.dataset_name + ".csv"
+            data = np.load("{}{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio))
+            num_of_vertices = data.shape[1]
+            adj_mx, distance_mx = get_adjacency_matrix(adj_filename, num_of_vertices, None)
+            np.save(self.config.dataset_dir + self.config.dataset_name + "_adj.npy", adj_mx)
         data = np.load("{}{}_train_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, self.config.train_ratio, self.config.test_ratio))
         data = data[:, :, np.newaxis]
         self.config.num_nodes = data.shape[1]
-        self.config.in_channels = data.shape[2]
+        #self.config.in_channels = data.shape[2]
         datasets = {}
         for category in ['train', 'val', 'test']:
             data = np.load("{}{}_{}_{}_{}.npy".format(self.config.dataset_dir, self.config.dataset_name, category, self.config.train_ratio, self.config.test_ratio))
             data = data[:, :, np.newaxis]
+            data = data.squeeze()
             x, y = seq2instance3d(data, self.config.num_his, self.config.num_pred)              
             if category == 'train':
                 self.mean, self.std = np.mean(x), np.std(x)
@@ -45,7 +52,7 @@ class ASTGCNTrainer(BaseTrainer):
         return datasets
     
     def setup_model(self):
-        adj_matrix = pd.read_csv(self.config.adj_mat_path, header=None).values.astype(float)
+        adj_matrix = np.load("{}{}_adj.npy".format(self.config.dataset_dir, self.config.dataset_name))
         L = scaled_laplacian(adj_matrix)
         cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(self.config.device) for i in cheb_poly(L, self.config.K)]
         self.model = self.cls(self.config, cheb_polynomials).to(self.device)
@@ -76,7 +83,9 @@ class ASTGCNTrainer(BaseTrainer):
             # TODO: Check if it is correct. Model may not be training properly
             target = target.squeeze().transpose(1,2)
             label = target[..., :self.config.output_dim]  # (..., 1)  supposed to be numpy array
+            label = target.reshape(target.shape[0], target.shape[1], -1)
             data, target = data.to(self.device), target.to(self.device)
+            data = data.squeeze(1).permute(0, 2, 3, 1)
             self.optimizer.zero_grad()
 
             output = self.model(data)
@@ -106,14 +115,19 @@ class ASTGCNTrainer(BaseTrainer):
         start_time = time.time()
 
         for batch_idx, (data, target) in enumerate(self.test_loader if is_test else self.val_loader):
-            label = target[..., :self.config.output_dim]
+            #print("L0", target.shape)
+            target = target[..., :self.config.output_dim].transpose(1,2)
+            #print("L1", label.shape)
+            label = target.reshape(target.shape[0], target.shape[1], -1)
             data, target = data.to(self.device), target.to(self.device)
+            data = data.squeeze(1).permute(0, 2, 3, 1)
             self.optimizer.zero_grad()
 
             with torch.no_grad():
                 output = self.model(data)
 
             output = output.cpu()
+            #print(output.shape, label.shape)
             loss = self.loss(output, label)  # loss is self-defined, need cpu input
 
             valid_time = time.time() - start_time

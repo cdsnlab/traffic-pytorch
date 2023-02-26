@@ -28,6 +28,7 @@ class cheb_conv(nn.Module):
         :param x: (batch_size, N, F_in, T)
         :return: (batch_size, N, F_out, T)
         '''
+        #print("X shape: ", x.shape)
         batch_size, num_of_vertices, in_channels, num_of_timesteps = x.shape
         outputs = []
         for time_step in range(num_of_timesteps):
@@ -36,8 +37,12 @@ class cheb_conv(nn.Module):
             for k in range(self.K):
                 T_k = self.cheb_polynomials[k]  # (N,N)
                 theta_k = self.Theta[k]  # (in_channel, out_channel)
-                rhs = graph_signal.permute(0, 2, 1).matmul(T_k).permute(0, 2, 1)
-                output = output + rhs.matmul(theta_k)
+                temp = graph_signal.permute(0, 2, 1)
+                temp = temp.matmul(T_k)
+                rhs = temp.permute(0, 2, 1)
+                #print(theta_k.shape, temp.shape, output.shape)
+                temp = rhs.matmul(theta_k)
+                output = output + temp
             outputs.append(output.unsqueeze(-1))
         return F.relu(torch.cat(outputs, dim=-1))
 
@@ -112,6 +117,7 @@ class MSTGCNModel(nn.Module):
         :return:
         '''
         super(MSTGCNModel, self).__init__()
+        config.in_channels = 3
         self.submodule = MSTGCN_submodule(config.device, config.nb_block, config.in_channels, config.K, config.nb_chev_filter,\
          config.nb_time_filter, config.time_strides, cheb_polynomials, config.n_pred, config.n_his)
         for p in self.submodule.parameters():
@@ -125,6 +131,7 @@ class MSTGCNModel(nn.Module):
         :param x: (B, N_nodes, F_in, T_in)
         :return: (B, N_nodes, T_out)
         '''
-        x = x.squeeze(-1)
-        x = x.permute(0, 3, 1, 2)
+        x = x.squeeze(1)
+        #print(x.shape)
+        x = x.permute(0, 2, 3, 1)
         return self.submodule(x)

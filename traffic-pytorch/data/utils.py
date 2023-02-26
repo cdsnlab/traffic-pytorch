@@ -62,6 +62,8 @@ def generate_train_val_test(dataset_dir, dataset_name, train_ratio, test_ratio, 
         df = pd.read_csv(os.path.join(dataset_dir, dataset_name)+".csv")
     elif format == 'npz':
         df = np.load(os.path.join(dataset_dir, dataset_name)+".npz")['data']
+    else:
+        raise ValueError("Invalid format")
 
     num_nodes = df.shape[1]
     if format == 'npz':
@@ -196,7 +198,8 @@ def cheb_poly(L, Ks):
     return np.asarray(LL)
 
 def get_matrix(file_path, Ks):
-    W = pd.read_csv(file_path, header=None).values.astype(float)
+    #W = pd.read_csv(file_path, header=None).values.astype(float)
+    W = np.load(file_path)
     L = scaled_laplacian(W)
     Lk = cheb_poly(L, Ks)
     Lk = torch.Tensor(Lk.astype(np.float32))
@@ -215,6 +218,53 @@ def get_normalized_adj(A):
     A_reg = alpha / 2 * (np.eye(A.shape[0]) + A_wave)
     return torch.from_numpy(A_reg.astype(np.float32))
 
+def get_adjacency_matrix(distance_df_filename, num_of_vertices, id_filename=None):
+    '''
+    Parameters
+    ----------
+    distance_df_filename: str, path of the csv file contains edges information
+    num_of_vertices: int, the number of vertices
+    Returns
+    ----------
+    A: np.ndarray, adjacency matrix
+    '''
+    if 'npy' in distance_df_filename:  # false
+        adj_mx = np.load(distance_df_filename)
+        return adj_mx, None
+    else:
+        
+        #--------------------------------------------- read from here
+        A = np.zeros((int(num_of_vertices), int(num_of_vertices)),dtype=np.float32)
+        distaneA = np.zeros((int(num_of_vertices), int(num_of_vertices)), dtype=np.float32)
+
+        #------------ Ignore
+        if id_filename: # false
+            with open(id_filename, 'r') as f:
+                id_dict = {int(i): idx for idx, i in enumerate(f.read().strip().split('\n'))}  # 把节点id（idx）映射成从0开始的索引
+
+            with open(distance_df_filename, 'r') as f:
+                f.readline()
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) != 3:
+                        continue
+                    i, j, distance = int(row[0]), int(row[1]), float(row[2])
+                    A[id_dict[i], id_dict[j]] = 1
+                    distaneA[id_dict[i], id_dict[j]] = distance
+            return A, distaneA
+
+        else:
+         #-------------Continue reading
+            with open(distance_df_filename, 'r') as f:
+                f.readline()
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) != 3:
+                        continue
+                    i, j, distance = int(row[0]), int(row[1]), float(row[2])
+                    A[i, j] = 1
+                    distaneA[i, j] = distance
+            return A, distaneA
 
 '''
 def generate_adjacency_matrix(dataset_dir, dataset_name, num_of_vertices, id_filename=None):

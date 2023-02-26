@@ -11,19 +11,25 @@ class STGCN_config(BaseConfig):
         self.Kt = 3
         self.Ks = 3 # choises [3, 2]
         # not sure how the blocks should be constructed
-        self.blocks = [[1, 32, 64], [64, 32, 128]]
+        self.blocks = [[3, 32, 64], [64, 32, 128]]
         self.n_his = 12
         self.output_dim = 1
+        self.n_pred = 9
        
         # TODO
         self.enable_bias = True
         self.droprate = 0.3
 
         # self.dataset_name = dataset_name
+        # Dataset
         if "PEMS-M" in dataset_name or "PEMSD" in dataset_name:
             self.dataset_name = "V_228"
             self.data_format = 'csv'
             self.adj_mat_path = os.path.join(dataset_dir, "W_228") + ".csv" # [os.path.join(dataset_dir, "W_228") + ".csv", os.path.join(dataset_dir, "adj") + ".npz"
+        elif "PEMS" in dataset_name:
+            self.data_format = 'npz'
+            self.adj_mat_path = os.path.join(dataset_dir, dataset_name) + "_adj.npy"
+            self.in_channels = 3
         else:
             self.adj_mat_path = os.path.join(dataset_dir, dataset_name) + ".csv"
 
@@ -33,7 +39,7 @@ class STGCN_config(BaseConfig):
 
         self.use_tod = False
         self.use_dow = False
-        self.total_epoch = 150
+        self.total_epoch = 450
         self.scheduler_args = {
 			"milestones": [50, 100],
             "gamma": 0.5
