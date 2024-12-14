@@ -1,3 +1,98 @@
+# Traffic-PyTorch Execution Manual
+
+---
+
+### I. Introduction: Overview of Traffic-PyTorch Framework
+
+The Traffic-PyTorch framework is a collection of cutting-edge spatiotemporal deep learning models designed for traffic prediction. It includes implementations of various prominent architectures such as ASTGCN, DCRNN, GMAN, and more. This manual provides a comprehensive guide to execute and modify the project.
+
+---
+
+### II. Environment Setup and Requirements
+
+1. **System Requirements**:
+    - Operating System: Linux, macOS, or Windows with WSL support.
+    - Python Version: 3.8 or higher.
+    - Memory: Minimum 8GB RAM (16GB recommended).
+    - GPU: NVIDIA GPU with CUDA support.
+
+2. **Dependency Installation**:
+    - Clone the repository and install dependencies:
+      ```bash
+      git clone https://github.com/your-repo/traffic-pytorch.git
+      cd traffic-pytorch
+      pip install -r requirements.txt
+      ```
+
+3. **Data Preparation**:
+    - Ensure the dataset follows the required format. The `data` directory includes utilities like `datasets.py` and `utils.py` to preprocess custom datasets.
+    - Preloaded datasets like PEMS-Bay can be configured via `config` files.
+
+---
+
+### III. Project Structure
+
+1. **Key Directories**:
+    - `config`: Configuration files for various models (ASTGCN, DCRNN, etc.).
+    - `data`: Utilities for dataset preprocessing and handling.
+    - `evaluation`: Evaluation metrics like MAPE, RMSE, etc.
+    - `logger`: Logging utilities.
+    - `model`: Implementations of all supported architectures.
+    - `trainer`: Training scripts for individual models.
+    - `util`: Additional utilities for processing and logging.
+
+2. **Important Files**:
+    - `train.py`: Main script for training models.
+    - `config/*.py`: Model-specific configurations.
+    - `trainer/base_trainer.py`: Base trainer class for custom modifications.
+
+---
+
+### IV. Execution Steps
+
+1. **Configuring the Model**:
+    - Choose a model by modifying the corresponding configuration file in `config/`.
+    - Example: Editing hyperparameters in `ASTGCN_config.py`.
+
+2. **Training the Model**:
+    - Execute `train.py` with the desired configuration:
+      ```bash
+      python train.py --model ASTGCN --config config/ASTGCN_config.py
+      ```
+
+3. **Evaluating the Model**:
+    - Use `evaluation/metrics.py` to compute evaluation metrics:
+      ```bash
+      python evaluation/metrics.py --predictions results/pred.csv --ground_truth data/ground_truth.csv
+      ```
+
+4. **Visualizing Results**:
+    - Leverage utilities in `logger/` to log and visualize training progress.
+
+---
+
+### V. Notes
+
+1. **Custom Dataset Integration**:
+    - Use `data/datasets.py` to adapt new datasets.
+    - Ensure compatibility with the expected format (e.g., `.csv` or `.pkl`).
+
+2. **Extending Models**:
+    - New models can be added by defining them in the `model` directory.
+    - Follow the structure of existing models like `STGCN.py`.
+
+3. **Error Handling**:
+    - Logs can be checked in the output directory specified in the configuration files.
+
+---
+
+### VI. Conclusion
+
+The Traffic-PyTorch framework is a versatile tool for exploring state-of-the-art traffic prediction models. By following this manual, users can train, evaluate, and customize models to suit their specific requirements.
+
+
+---
+
 # traffic-pytorch
 Integrated platform for urban intelligence tasks including traffic and demand prediction.
 
